@@ -97,3 +97,16 @@ counts_sub %>%
        x = "Year", y = "Detections") +
   theme_minimal()
 
+
+# Add a wind covariate
+wind_vals <- seq(min(obs_covs$windSpeed), max(obs_covs$windSpeed), length.out = 100)
+new_data <- data.frame(wind = wind_vals)
+pred <- predict(model_with_covs, type = "state", newdata = new_data)
+
+df <- data.frame(wind = wind_vals, psi = pred$Predicted)
+
+ggplot(df, aes(x = wind, y = psi)) +
+  geom_line(color = "green", size = 1.2) +
+  labs(title = "Occupancy Probability vs. Wind Speed",
+       x = "Wind Speed (m/s)", y = "Occupancy (ψ)") +
+  theme_minimal()

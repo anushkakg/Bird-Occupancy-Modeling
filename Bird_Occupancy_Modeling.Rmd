@@ -1,0 +1,76 @@
+---
+title: "NEON Bird Occupancy Modeling"
+author: "Anushka Gupta"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+## NEON Birds
+Something something here about NEON Bird Data and how it is collected, links to protocols and data product
+## Occupancy Modeling
+Something something here about what occupancy modelling is and why is it useful for these data
+```{r}
+
+```
+
+# Setup
+## Importing libraries
+```{r}
+library(neonUtilities) #package for downloading NEON data 
+library(dplyr)
+library(tidyr)
+```
+
+## Importing Data
+```{r}
+sites_large <- ("DELA", "")
+sites_small <- ()
+sites_combined <- ()
+bird.counts <- loadByProduct(dpID="DP1.10003.001",
+                             site=c("DELA", "LENO", "TALL"),
+                             startdate="2018-01",
+                             enddate="2023-12",
+                             check.size = F)
+
+```
+
+# Descriptive Analyses
+## Detection
+### Detection by species
+Something descriptive about setup and how we're rearranging the data
+```{r Setup}
+the end of this should be a table with species (row) x year (cols)
+```
+
+Something descriptive about what it is we're doing
+```{r Model}
+
+```
+
+something describing the outputs
+```{r Outputs}
+
+```
+
+What do we see in the output? is this cool? What is it teling us? yay birds.
+
+### Detection by species x site
+### Detection by species x site x year
+
+## Within a site
+### Detection within a site
+### Occupancy within a site
+
+## Local community dynamics
+### Community dynamics by species
+### Community dynamics by species x site
+### Community dynamics by species x site x year
+
+# Predictive/Causual Hypotheses

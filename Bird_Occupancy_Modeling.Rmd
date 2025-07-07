@@ -13,12 +13,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 ## NEON Birds
-Something something here about NEON Bird Data and how it is collected, links to protocols and data product
-## Occupancy Modeling
-Something something here about what occupancy modelling is and why is it useful for these data
-```{r}
+The U.S National Science Foundation's National Ecological Observatory Network is a continental-scale observation facility designed to collect long-term ecological data. 
+The data product being used contains the quality-controlled, native sampling resolution data from NEON's breeding landbird sampling. 
 
-```
+Protocols: https://data.neonscience.org/documents/10179/1883155/NEON.DOC.014041vL/2a13bc2b-84db-e4e5-1d33-af8fac1f9e24
+Data Product: https://data.neonscience.org/data-products/DP1.10003.001
+
+
+## Occupancy Modeling
+Occupancy models are used to help estimate true occupancy of a species and can help account for imperfect detection of organisms in a study. 
 
 # Setup
 ## Importing libraries
@@ -30,11 +33,14 @@ library(tidyr)
 
 ## Importing Data
 ```{r}
-sites_large <- ("DELA", "")
-sites_small <- ()
-sites_combined <- ()
+sites_large <- c("BART","HARV","DSNY","JERC","OSBS","GUAN","STEI","UNDE","KONZ","UKFS","GRSM","MLBS","ORNL","TALL","WOOD","CPER","RMNP","CLBJ","OAES","YELL","MOAB","NIWO","JORN","SRER","ONAQ","WREF","SJER","TEAK","BARR","BONA","DEJU","HEAL")
+
+sites_small <- c("BLAN","SCBI","SERC","LAJA","TREE","KONA","DELA","LENO","DCFS","NOGP","STER","ABBY","SOAP","TOOL","PUUM")
+
+sites_combined <- c(large_sites, small_sites)
+
 bird.counts <- loadByProduct(dpID="DP1.10003.001",
-                             site=c("DELA", "LENO", "TALL"),
+                             site=sites_small,
                              startdate="2018-01",
                              enddate="2023-12",
                              check.size = F)
@@ -46,7 +52,24 @@ bird.counts <- loadByProduct(dpID="DP1.10003.001",
 ### Detection by species
 Something descriptive about setup and how we're rearranging the data
 ```{r Setup}
-the end of this should be a table with species (row) x year (cols)
+#the end of this should be a table with species (row) x year (cols)
+counts <- bird.counts$brd_countdata
+counts$year <- as.numeric(substr(counts$startDate, 1, 4)) 
+counts <- counts %>% 
+          group_by(year)
+View(counts)
+
+# Summarize total detections by species and year
+species_year_summary <- counts %>%
+  group_by(scientificName, year) %>%
+  summarise(detections = sum(birdCount, na.rm = TRUE), .groups = "drop")
+
+# Convert to wide format: species as rows, years as columns
+species_year_table <- species_year_summary %>%
+  pivot_wider(names_from = year, values_from = detections, values_fill = 0)
+
+# View the resulting table
+View(species_year_table)
 ```
 
 Something descriptive about what it is we're doing

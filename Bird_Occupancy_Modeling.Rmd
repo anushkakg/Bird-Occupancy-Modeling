@@ -55,21 +55,29 @@ Something descriptive about setup and how we're rearranging the data
 #the end of this should be a table with species (row) x year (cols)
 counts <- bird.counts$brd_countdata
 counts$year <- as.numeric(substr(counts$startDate, 1, 4)) 
+
+# add year column
 counts <- counts %>% 
           group_by(year)
 View(counts)
 
-# Summarize total detections by species and year
-species_year_summary <- counts %>%
-  group_by(scientificName, year) %>%
-  summarise(detections = sum(birdCount, na.rm = TRUE), .groups = "drop")
+# simplify to detection by year and species
+counts_by_year <- counts %>%
+  count(year, scientificName) %>% 
+  filter(!is.na(scientificName))
+View(counts_by_year)
 
-# Convert to wide format: species as rows, years as columns
-species_year_table <- species_year_summary %>%
-  pivot_wider(names_from = year, values_from = detections, values_fill = 0)
+# convert to wide format: species as rows, years as columns
+wide_df <- counts_by_year %>% 
+pivot_wider(
+    id_cols = scientificName,       
+    names_from = year, 
+    values_from = n,
+    values_fill = 0
+  )
 
-# View the resulting table
-View(species_year_table)
+# View Resulting Table
+View(wide_df)
 ```
 
 Something descriptive about what it is we're doing

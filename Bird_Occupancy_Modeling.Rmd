@@ -27,9 +27,11 @@ Occupancy models are used to help estimate true occupancy of a species and can h
 ## Importing libraries
 ```{r}
 library(neonUtilities) #package for downloading NEON data 
+library(RPresence) # library for doing occupancy modelling
 library(dplyr)
 library(tidyr)
 library(stringr)
+library(ggplot2) # library for visualization
 ```
 
 ## Importing Data
@@ -95,6 +97,17 @@ brd_countdata_cleaned <- bird.counts$brd_countdata %>%
   filter(taxonRank == "species")
 ```
 
+3. Add year as a column in each of these tables in order to join them correctly
+
+```{r}
+brd_perpoint_cleaned <- brd_perpoint_cleaned %>%
+  mutate(year = str_extract(eventID, "\\d{4}"))
+
+brd_countdata_cleaned <- brd_countdata_cleaned %>%
+  mutate(year = str_extract(eventID, "\\d{4}"))
+```
+
+
 ## Data Standardization
 
 Because there is inconsistent sampling across sites (i.e., some sites are larger than others and not all plots within a site were continuously sampled over time), in order to do analyses across sites, we need to make sure that the data are standardized with respect to amount of sampling time.
@@ -104,6 +117,140 @@ Because there is inconsistent sampling across sites (i.e., some sites are larger
 ```
 
 # Descriptive Analyses
+
+Great, now that our data are cleaned and standardized, we can start doing some basic analyses. First, lets take a look at a single species within a site in terms of its detection and occupancy. 
+
+## Within a site
+
+melanerpes carolinus, SCBI
+
+
+### Occupancy within a site
+
+#### Data Munging (Create the occupancy table and covariants)
+
+```{r}
+# Filter the tables by site and species
+brd_perpoint_model1 <- brd_perpoint_cleaned %>%
+  filter(siteID %in% c("SCBI", "BARR", "BART", "BONA", "CLBJ", "CPER", "DEJU", "DSNY", "GRSM",
+  "GUAN", "HARV", "HEAL", "JERC", "JORN", "KONZ", "MLBS", "MOAB"))
+
+brd_countdata_model1 <- brd_countdata_cleaned %>%
+  filter(siteID %in% c("SCBI", "BARR", "BART", "BONA", "CLBJ", "CPER", "DEJU", "DSNY", "GRSM",
+  "GUAN", "HARV", "HEAL", "JERC", "JORN", "KONZ", "MLBS", "MOAB")) %>%
+  filter(scientificName == "Melanerpes carolinus")
+
+# Create keys for each table so we can join them into an occupancy table
+
+brd_perpoint_model1 <- brd_perpoint_model1 %>%
+  mutate(point_key = paste(namedLocation, pointID, boutNumber, sep = "_"))
+
+brd_countdata_model1 <- brd_countdata_model1 %>%
+  mutate(point_key = paste(namedLocation, pointID, boutNumber, sep = "_"))
+
+# Step 1: Get valid siteID–year combinations (from perpoint)
+valid_site_years <- brd_perpoint_model1 %>%
+  distinct(plotID, year)
+
+# Step 2: Filter brd_countdata to match valid point_keys
+brd_joineddata_model1 <- semi_join(
+  brd_countdata_model1,
+  brd_perpoint_model1,
+  by = "point_key"
+)
+
+# Step 3: Actual detections — only species *actually observed at a site*
+detections <- brd_countdata_model1 %>%
+  group_by(plotID, year) %>%
+  summarize(present = 1, .groups = "drop")
+
+# Step 4: Get species × siteID combinations where species was ever detected
+observed_species_site <- detections %>%
+  distinct(plotID)
+
+# Step 5: Create grid of species × siteID × year (only valid years & species seen at site)
+species_grid <- inner_join(
+  observed_species_site,
+  valid_site_years,
+  by = "plotID",
+  relationship = "many-to-many"
+)
+
+# Step 6: Join detections and fill 0s
+species_by_year_plot <- species_grid %>%
+  left_join(detections, by = c("plotID", "year")) %>%
+  mutate(present = replace_na(present, 0)) %>%
+  pivot_wider(
+    names_from = year,
+    values_from = present
+  )
+
+View(species_by_year_plot)
+```
+
+#### Create the Pao presence-absence object (Pao)
+```{r}
+birds_pao_model1 <- createPao(
+  data = species_by_year_plot[, c("2018", "2019", "2020", "2021", "2022", "2023")],
+  unitnames = species_by_year_plot$plotID,
+  title = "Red-bellied Woodpecker of SCBI"
+)
+```
+
+#### Run the actual model
+```{r}
+birds_occupancy_model1 <- occMod(
+  data = birds_pao_model1,           
+  model = list(psi ~ 1,  p ~ SURVEY),
+  type = 'so'
+  )
+
+str(birds_occupancy_model1)
+```
+
+#### Model Results
+```{r}
+summary(birds_occupancy_model1)
+birds_occupancy_model1$real$psi
+birds_occupancy_model1$real$p
+
+ests <- as.data.frame(print_one_site_estimates(mod = birds_occupancy_model1))
+
+ests <- ests %>% 
+  mutate(parm = c("psi", "p1", "p2", "p3", "p4", "p5", "p6")) %>% 
+  select(parm, est, se, lower, upper) %>% 
+  rename(., 
+    c(
+      Parameter = parm,
+      Estimate = est,
+      SE = se,
+      L95 = lower,
+      U95 = upper
+    )
+  ) %>% 
+  `rownames<-`(seq_len(nrow(ests))) %>%
+  filter(Parameter != "psi")
+
+ggplot(ests, aes(x = Parameter, y = Estimate)) +
+  labs(x = "Parameter", y = "Estimate") +
+  geom_bar(stat = 'identity') +
+  geom_errorbar(aes(ymin = L95, ymax = U95), width = 0.2) +
+  theme_bw()
+
+```
+
+
+### Detection within a site
+```{r}
+
+```
+
+
+
+Ignore everything after this
+----------------------------------------------------------------------
+
+
 ## Detection
 ### Detection by species
 Something descriptive about setup and how we're rearranging the data

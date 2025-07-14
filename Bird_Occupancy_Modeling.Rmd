@@ -83,30 +83,93 @@ Describe how the data are set up (i.e., there are two tables, with what data in 
 
 First, we need to do some generic data cleanup.
 
-1. We need to filter out surveys that could not be completed for whatever reason (Covid, site was flooded, etc.)
+1. Create unique surveyID - we have to create a unique key first consisting of the site, plot, point, year and bout)
 
 ```{r}
-brd_perpoint_cleaned <- bird.counts$brd_perpoint %>%
+brd_perpoint_clean <- bird.counts$brd_perpoint %>%
+  mutate(year = str_extract(eventID, "\\d{4}"))%>%
+  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_"))
+
+brd_countdata_clean <- bird.counts$brd_countdata %>%
+  mutate(year = str_extract(eventID, "\\d{4}"))%>%
+  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_"))
+
+```
+
+Various data issues.
+
+A large site should have points 1-9 for each plot. If it doesn't, something is wrong. Remove the whole plot survey if missing a point survey
+
+Note: this isn't a huge deal for these analyses but this is a problem. Needs to be above any survey removal if using. 
+
+```{r eval=FALSE, include=FALSE}
+bad_pointSurveyID <- brd_perpoint_clean %>%
+  filter(pointID != "21") %>%
+  group_by(plotID, year, boutNumber) %>%
+  filter(n_distinct(pointID) != 9) %>%
+  arrange(plotID, year, boutNumber, pointID) %>%
+  pull(pointSurveyID)
+
+bad_pointSurveyID
+
+brd_perpoint_clean <- brd_perpoint_clean %>%
+  filter(!pointSurveyID %in% bad_pointSurveyID)
+
+brd_countdata_clean <- brd_countdata_clean %>%
+  filter(!pointSurveyID %in% bad_pointSurveyID)
+
+```
+
+2. Filter out surveys where they could not finish
+
+```{r}
+brd_perpoint_clean <- brd_perpoint_clean %>%
   filter(samplingImpractical == "OK")
 ```
 
-2. Since we're really only interested in species level data, we need to remove records that are not recorded to the species level
+
+3. Since we're really only interested in species level data, we need to remove records that are not recorded to the species level or had no records for that pointSurvey minute (taxonRank will be NA)
 
 ```{r}
-brd_countdata_cleaned <- bird.counts$brd_countdata %>%
+brd_countdata_clean <- brd_countdata_clean %>%
   filter(taxonRank == "species")
 ```
 
-3. Add year as a column in each of these tables in order to join them correctly
+Sometimes there are duplicate pointSurveyIDs and there shouldn't be - likely errors in data input.
 
 ```{r}
-brd_perpoint_cleaned <- brd_perpoint_cleaned %>%
-  mutate(year = str_extract(eventID, "\\d{4}"))
+duplicate_pointSurveyID <- brd_perpoint_clean %>%
+  count(pointSurveyID) %>%
+  filter(n > 1) %>%
+  pull(pointSurveyID)
 
-brd_countdata_cleaned <- brd_countdata_cleaned %>%
-  mutate(year = str_extract(eventID, "\\d{4}"))
+duplicate_pointSurveyID
+
+#remove both of the duplicate surveys from each table
+brd_perpoint_clean <- brd_perpoint_clean %>%
+  filter(!pointSurveyID %in% duplicate_pointSurveyID)
+
+brd_countdata_clean <- brd_countdata_clean %>%
+  filter(!pointSurveyID %in% duplicate_pointSurveyID)
+
 ```
 
+Do the join
+
+```{r}
+brd_joineddata_clean <- inner_join(
+  brd_countdata_clean,
+  brd_perpoint_clean,
+  by = "pointSurveyID",
+  suffix = c(".count", ".perpoint")
+)
+
+#Remove duplicate columns between tables
+brd_joineddata_clean <- brd_joineddata_clean %>%
+  select(-matches("\\.perpoint$"))
+names(brd_joineddata_clean) <- gsub("\\.count$", "", names(brd_joineddata_clean))
+
+```
 
 ## Data Standardization
 
@@ -122,69 +185,46 @@ Great, now that our data are cleaned and standardized, we can start doing some b
 
 ## Within a site
 
-melanerpes carolinus, SCBI
-
+Melanerpes carolinus (Red-bellied Woodpecker) across all sites
 
 ### Occupancy within a site
 
 #### Data Munging (Create the occupancy table and covariants)
 
 ```{r}
-# Filter the tables by site and species
-brd_perpoint_model1 <- brd_perpoint_cleaned %>%
-  filter(siteID %in% c("SCBI", "BARR", "BART", "BONA", "CLBJ", "CPER", "DEJU", "DSNY", "GRSM",
-  "GUAN", "HARV", "HEAL", "JERC", "JORN", "KONZ", "MLBS", "MOAB"))
+# Filter table by species
+bird_species <- "Acanthis flammea"
+brd_joineddata_model1 <- brd_joineddata_clean %>%
+  filter(siteID %in% sites) %>%
+  filter(scientificName == bird_species)
 
-brd_countdata_model1 <- brd_countdata_cleaned %>%
-  filter(siteID %in% c("SCBI", "BARR", "BART", "BONA", "CLBJ", "CPER", "DEJU", "DSNY", "GRSM",
-  "GUAN", "HARV", "HEAL", "JERC", "JORN", "KONZ", "MLBS", "MOAB")) %>%
-  filter(scientificName == "Melanerpes carolinus")
+# Get all valid surveys years across sites (so we can fill in NAs)
+valid_site_years <- brd_perpoint_clean %>%
+  distinct(siteID, year)
 
-# Create keys for each table so we can join them into an occupancy table
-
-brd_perpoint_model1 <- brd_perpoint_model1 %>%
-  mutate(point_key = paste(namedLocation, pointID, boutNumber, sep = "_"))
-
-brd_countdata_model1 <- brd_countdata_model1 %>%
-  mutate(point_key = paste(namedLocation, pointID, boutNumber, sep = "_"))
-
-# Step 1: Get valid siteID–year combinations (from perpoint)
-valid_site_years <- brd_perpoint_model1 %>%
-  distinct(plotID, year)
-
-# Step 2: Filter brd_countdata to match valid point_keys
-brd_joineddata_model1 <- semi_join(
-  brd_countdata_model1,
-  brd_perpoint_model1,
-  by = "point_key"
-)
-
-# Step 3: Actual detections — only species *actually observed at a site*
-detections <- brd_countdata_model1 %>%
-  group_by(plotID, year) %>%
+# Get detections — only species *actually observed at a site* (so we can fill in 0s)
+detections <- brd_joineddata_model1 %>%
+  group_by(siteID, year) %>%
   summarize(present = 1, .groups = "drop")
 
-# Step 4: Get species × siteID combinations
-species_grid <- valid_site_years
-
-# Step 5: Join detections and fill 0s
-species_by_year_plot <- species_grid %>%
-  left_join(detections, by = c("plotID", "year")) %>%
+# Join and fill
+site_by_year <- valid_site_years %>%
+  left_join(detections, by = c("siteID", "year")) %>%
   mutate(present = replace_na(present, 0)) %>%
   pivot_wider(
     names_from = year,
     values_from = present
   )
 
-View(species_by_year_plot)
+head(site_by_year, n=10)
 ```
 
 #### Create the Pao presence-absence object (Pao)
 ```{r}
 birds_pao_model1 <- createPao(
-  data = species_by_year_plot[, c("2018", "2019", "2020", "2021", "2022", "2023")],
-  unitnames = species_by_year_plot$plotID,
-  title = "Red-bellied Woodpecker of SCBI"
+  data = site_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023")],
+  unitnames = site_by_year$siteID,
+  title = "Red-bellied Woodpecker"
 )
 ```
 
@@ -192,22 +232,27 @@ birds_pao_model1 <- createPao(
 ```{r}
 birds_occupancy_model1 <- occMod(
   data = birds_pao_model1,           
-  model = list(psi ~ 1,  p ~ SURVEY),
+  model = list(psi ~ 1,  p ~ 1),
   type = 'so'
   )
 
-str(birds_occupancy_model1)
+summary(birds_occupancy_model1)
 ```
 
 #### Model Results
-```{r}
-summary(birds_occupancy_model1)
 
-print_one_site_estimates(mod = birds_occupancy_model1, site = 1)
+This shows that Melanerpes carolinus has an occupancy probability (psi) of 45% (i.e., if you go to any of these sites, there is a 45% chance of this bird occupying the site) and a detection probability (p) of 91% (i.e., if you visit a site and the bird occupies it, there is a 91% chance you will detect it)
+
+```{r}
+#print_one_site_estimates(mod = birds_occupancy_model1, site = 1)
+
+#fitted(object = birds_occupancy_model1, param = 'psi', prob = 0.95)
+#fitted(object = birds_occupancy_model1, param = 'p', prob = 0.95)
+
 ests <- as.data.frame(print_one_site_estimates(mod = birds_occupancy_model1))
 
-ests <- ests %>% 
-  mutate(parm = c("psi", "p1", "p2", "p3", "p4", "p5", "p6")) %>% 
+ests <- ests[1:2,] %>% 
+  mutate(parm = c("psi", "p")) %>% 
   select(parm, est, se, lower, upper) %>% 
   rename(., 
     c(
@@ -218,13 +263,213 @@ ests <- ests %>%
       U95 = upper
     )
   ) %>% 
-  `rownames<-`(seq_len(nrow(ests)))
+  `rownames<-`(seq_len(nrow(ests[1:2,])))
 
+ests
+```
+
+
+```{r}
 ggplot(ests, aes(x = Parameter, y = Estimate)) +
   labs(x = "Parameter", y = "Estimate") +
   geom_bar(stat = 'identity') +
   geom_errorbar(aes(ymin = L95, ymax = U95), width = 0.2) +
   theme_bw()
+
+```
+
+### All the birds
+
+#### Create a function
+```{r}
+run_occ_for_species_list <- function(species_df, brd_joineddata_clean, brd_perpoint_clean, sites, years = c("2018", "2019", "2020", "2021", "2022", "2023")) {
+  
+  results <- list()
+  detection_histories <- list()
+  
+  for (i in seq_len(nrow(species_df))) {
+    
+    sci_name <- species_df$scientificName[i]
+    common_name <- species_df$vernacularName[i]
+    
+    # Filter detection data to this species and the sites
+    brd_species <- brd_joineddata_clean %>%
+      filter(siteID %in% sites, scientificName == sci_name)
+    
+    # Get valid surveys (site-year combos with effort)
+    valid_site_years <- brd_perpoint_clean %>%
+      filter(siteID %in% sites) %>%
+      distinct(siteID, year)
+    
+    # Get detections for this species
+    detections <- brd_species %>%
+      group_by(siteID, year) %>%
+      summarize(present = 1, .groups = "drop")
+    
+    # Build site-year detection matrix
+    site_by_year <- valid_site_years %>%
+      left_join(detections, by = c("siteID", "year")) %>%
+      mutate(present = replace_na(present, 0)) %>%
+      pivot_wider(
+        names_from = year,
+        values_from = present
+      )
+    
+    # Create Pao object
+    birds_pao <- createPao(
+      data = site_by_year[, years],
+      unitnames = site_by_year$siteID,
+      title = common_name
+    )
+    
+    # Run occupancy model
+    model <- occMod(
+      data = birds_pao,
+      model = list(psi ~ 1, p ~ 1),
+      type = "so"
+    )
+    
+    # Extract estimates
+    ests <- print_one_site_estimates(mod = model) %>%
+      as.data.frame() %>%
+      slice(1:2)
+    
+    rownames(ests) <- NULL
+    
+    named_est <- list(
+      vernacularName = common_name,
+      psi_Estimate = ests$est[1],
+      psi_SE       = ests$se[1],
+      psi_L95      = ests$lower[1],
+      psi_U95      = ests$upper[1],
+      p_Estimate   = ests$est[2],
+      p_SE         = ests$se[2],
+      p_L95        = ests$lower[2],
+      p_U95        = ests$upper[2]
+    )
+
+    detection_histories[[sci_name]] <- site_by_year
+    results[[sci_name]] <- named_est
+  }
+  
+  return(list(
+    estimates = results,
+    detection_histories = detection_histories
+  ))
+  
+}
+```
+
+Run the function across all species
+
+```{r warning=FALSE}
+species_input <- brd_joineddata_clean %>%
+  distinct(scientificName, vernacularName) %>%
+  arrange(scientificName)
+
+results_df <- run_occ_for_species_list(
+  species_df = species_input,
+  brd_joineddata_clean = brd_joineddata_clean,
+  brd_perpoint_clean = brd_perpoint_clean,
+  sites = sites
+)
+```
+
+Plot psi (occupancy)
+
+```{r}
+psi_df <- bind_rows(lapply(names(results_df$estimates), function(name) {
+  row <- results_df$estimates[[name]]
+  tibble(
+    scientificName = name,
+    vernacularName = row$vernacularName,
+    psi_Estimate = row$psi_Estimate,
+    psi_SE = row$psi_SE,
+    psi_L95 = row$psi_L95,
+    psi_U95 = row$psi_U95
+  )
+})) %>%
+  arrange(psi_Estimate)
+
+psi_df <- psi_df %>%
+  mutate(label = paste0(scientificName))
+  #mutate(label = paste0(scientificName, "\n", vernacularName))
+
+ggplot(psi_df, aes(x = reorder(label, psi_Estimate), y = psi_Estimate)) +
+  geom_col(fill = "grey") +
+  geom_errorbar(aes(ymin = psi_L95, ymax = psi_U95), width = 0.2) +
+  labs(
+    title = "Species Occupancy (ψ) Estimates",
+    x = "Species",
+    y = "ψ Estimate"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+Plot p (detection)
+
+```{r}
+p_df <- bind_rows(lapply(names(results_df$estimates), function(name) {
+  row <- results_df$estimates[[name]]
+  tibble(
+    scientificName = name,
+    vernacularName = row$vernacularName,
+    p_Estimate = row$p_Estimate,
+    p_SE = row$p_SE,
+    p_L95 = row$p_L95,
+    p_U95 = row$p_U95
+  )
+})) %>%
+  arrange(p_Estimate)
+
+p_df <- p_df %>%
+  mutate(label = paste0(scientificName))
+  #mutate(label = paste0(scientificName, "\n", vernacularName))
+
+ggplot(p_df, aes(x = reorder(label, p_Estimate), y = p_Estimate)) +
+  geom_col(fill = "grey") +
+  geom_errorbar(aes(ymin = p_L95, ymax = p_U95), width = 0.2) +
+  labs(
+    title = "Species Detection Probability (p) Estimates",
+    x = "Species",
+    y = "p Estimate"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+Take a look at the data for any of the species - we probably aren't interested in species with a 1 for detection, 1 for occupancy (there likely aren't any species that have all 1s), 
+
+```{r}
+
+#species with highest psi
+psi_df %>%
+  arrange(desc(psi_Estimate)) %>%
+  head(10)
+
+#species with lowest psi
+psi_df %>%
+  arrange(psi_Estimate) %>%
+  head(10)
+
+#species with highest p
+p_df %>%
+  arrange(desc(p_Estimate)) %>%
+  head(10)
+
+#species with lowest p
+p_df %>%
+  arrange(p_Estimate) %>%
+  head(10)
+
+#look at the presence/absence data
+View(results_df$detection_histories$`Zonotrichia querula`)
+
+#look at the raw data
+View(brd_joineddata_clean %>%
+  filter(scientificName == "Amazilia rutila"))
 
 ```
 

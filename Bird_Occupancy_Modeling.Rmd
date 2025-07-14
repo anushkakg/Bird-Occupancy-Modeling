@@ -202,9 +202,8 @@ str(birds_occupancy_model1)
 #### Model Results
 ```{r}
 summary(birds_occupancy_model1)
-birds_occupancy_model1$real$psi
-birds_occupancy_model1$real$p
 
+print_one_site_estimates(mod = birds_occupancy_model1, site = 1)
 ests <- as.data.frame(print_one_site_estimates(mod = birds_occupancy_model1))
 
 ests <- ests %>% 
@@ -219,8 +218,7 @@ ests <- ests %>%
       U95 = upper
     )
   ) %>% 
-  `rownames<-`(seq_len(nrow(ests))) %>%
-  filter(Parameter != "psi")
+  `rownames<-`(seq_len(nrow(ests)))
 
 ggplot(ests, aes(x = Parameter, y = Estimate)) +
   labs(x = "Parameter", y = "Estimate") +

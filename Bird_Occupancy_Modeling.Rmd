@@ -440,7 +440,9 @@ ggplot(p_df, aes(x = reorder(label, p_Estimate), y = p_Estimate)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
-Take a look at the data for any of the species - we probably aren't interested in species with a 1 for detection, 1 for occupancy (there likely aren't any species that have all 1s), 
+Take a look at the data for any of the species - we probably aren't interested in species with a 1 for detection, 1 for occupancy (there likely aren't any species that have all 1s)
+
+Curious about species with higher occupancy but lower detection
 
 ```{r}
 
@@ -465,11 +467,14 @@ p_df %>%
   head(10)
 
 #look at the presence/absence data
-View(results_df$detection_histories$`Zonotrichia querula`)
+View(results_df$detection_histories$`Phalaropus tricolor`)
 
 #look at the raw data
 View(brd_joineddata_clean %>%
   filter(scientificName == "Amazilia rutila"))
+
+#look at the model results
+View(results_df$estimates$`Phalaropus tricolor`)
 
 ```
 

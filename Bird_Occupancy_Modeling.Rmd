@@ -29,6 +29,7 @@ Occupancy models are used to help estimate true occupancy of a species and can h
 library(neonUtilities) #package for downloading NEON data 
 library(dplyr)
 library(tidyr)
+library(stringr)
 ```
 
 ## Importing Data
@@ -65,6 +66,41 @@ if (file.exists("data/bird_counts.RData")) {
   
   save(bird.counts, file = "data/bird_counts.RData")
 }
+```
+
+## Data Examination
+
+Describe how the data are set up (i.e., there are two tables, with what data in them?)
+
+```{r}
+
+```
+
+
+## Data Cleanup
+
+First, we need to do some generic data cleanup.
+
+1. We need to filter out surveys that could not be completed for whatever reason (Covid, site was flooded, etc.)
+
+```{r}
+brd_perpoint_cleaned <- bird.counts$brd_perpoint %>%
+  filter(samplingImpractical == "OK")
+```
+
+2. Since we're really only interested in species level data, we need to remove records that are not recorded to the species level
+
+```{r}
+brd_countdata_cleaned <- bird.counts$brd_countdata %>%
+  filter(taxonRank == "species")
+```
+
+## Data Standardization
+
+Because there is inconsistent sampling across sites (i.e., some sites are larger than others and not all plots within a site were continuously sampled over time), in order to do analyses across sites, we need to make sure that the data are standardized with respect to amount of sampling time.
+
+```{r}
+
 ```
 
 # Descriptive Analyses

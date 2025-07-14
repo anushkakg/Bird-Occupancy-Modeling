@@ -33,18 +33,38 @@ library(tidyr)
 
 ## Importing Data
 ```{r}
-sites_large <- c("BART","HARV","DSNY","JERC","OSBS","GUAN","STEI","UNDE","KONZ","UKFS","GRSM","MLBS","ORNL","TALL","WOOD","CPER","RMNP","CLBJ","OAES","YELL","MOAB","NIWO","JORN","SRER","ONAQ","WREF","SJER","TEAK","BARR","BONA","DEJU","HEAL")
+large_sites <- c(
+  "BARR", "BART", "BONA", "CLBJ", "CPER", "DEJU", "DSNY", "GRSM",
+  "GUAN", "HARV", "HEAL", "JERC", "JORN", "KONZ", "MLBS", "MOAB",
+  "NIWO", "OAES", "ONAQ", "ORNL", "OSBS", "RMNP", "SJER", "SRER",
+  "STEI", "TALL", "TEAK", "UKFS", "UNDE", "WOOD", "WREF", "YELL"
+)
+small_sites <- c(
+  "DELA", "LENO", "TOOL", "SOAP", "STER", "PUUM", "KONA",
+  "SERC", "DCFS", "NOGP", "LAJA", "BLAN", "SCBI", "ABBY", "TREE"
+)
+sites <- c(large_sites, small_sites)
 
-sites_small <- c("BLAN","SCBI","SERC","LAJA","TREE","KONA","DELA","LENO","DCFS","NOGP","STER","ABBY","SOAP","TOOL","PUUM")
+if (!dir.exists("data")) {
+  dir.create("data")
+}
 
-sites_combined <- c(large_sites, small_sites)
+if (!dir.exists("outputs")) {
+  dir.create("outputs")
+}
 
-bird.counts <- loadByProduct(dpID="DP1.10003.001",
-                             site=sites_small,
-                             startdate="2018-01",
-                             enddate="2023-12",
-                             check.size = F)
-
+if (file.exists("data/bird_counts.RData")) {
+  load("data/bird_counts.RData")
+} else {
+  
+  bird.counts <- loadByProduct(dpID="DP1.10003.001",
+                               site=sites,
+                               startdate="2018-01",
+                               enddate="2023-12",
+                               check.size = F)
+  
+  save(bird.counts, file = "data/bird_counts.RData")
+}
 ```
 
 # Descriptive Analyses

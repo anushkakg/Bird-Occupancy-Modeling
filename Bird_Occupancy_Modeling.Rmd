@@ -183,11 +183,11 @@ Because there is inconsistent sampling across sites (i.e., some sites are larger
 
 Great, now that our data are cleaned and standardized, we can start doing some basic analyses. First, lets take a look at a single species within a site in terms of its detection and occupancy. 
 
-## Within a site
+## Single Occupancy Models
+
+### Single Species
 
 Melanerpes carolinus (Red-bellied Woodpecker) across all sites
-
-### Occupancy within a site
 
 #### Data Munging (Create the occupancy table and covariants)
 
@@ -278,7 +278,7 @@ ggplot(ests, aes(x = Parameter, y = Estimate)) +
 
 ```
 
-### All the birds
+### Across all Species
 
 #### Create a function
 ```{r}

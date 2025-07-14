@@ -164,19 +164,10 @@ detections <- brd_countdata_model1 %>%
   group_by(plotID, year) %>%
   summarize(present = 1, .groups = "drop")
 
-# Step 4: Get species × siteID combinations where species was ever detected
-observed_species_site <- detections %>%
-  distinct(plotID)
+# Step 4: Get species × siteID combinations
+species_grid <- valid_site_years
 
-# Step 5: Create grid of species × siteID × year (only valid years & species seen at site)
-species_grid <- inner_join(
-  observed_species_site,
-  valid_site_years,
-  by = "plotID",
-  relationship = "many-to-many"
-)
-
-# Step 6: Join detections and fill 0s
+# Step 5: Join detections and fill 0s
 species_by_year_plot <- species_grid %>%
   left_join(detections, by = c("plotID", "year")) %>%
   mutate(present = replace_na(present, 0)) %>%

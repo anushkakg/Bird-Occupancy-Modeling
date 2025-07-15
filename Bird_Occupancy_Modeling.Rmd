@@ -375,6 +375,8 @@ results_df <- run_occ_for_species_list(
 )
 ```
 
+#### Results
+
 Plot psi (occupancy)
 
 ```{r}
@@ -504,12 +506,6 @@ psi_range_species <- estimates_df %>%
 psi_range_species
 ```
 Blue Jays and Great Horned Owls have similar occupancies but wildly different detections.
-
-
-### Detection within a site
-```{r}
-
-```
 
 
 

@@ -444,7 +444,7 @@ Take a look at the data for any of the species - we probably aren't interested i
 
 Curious about species with higher occupancy but lower detection
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 
 #species with highest psi
 psi_df %>%
@@ -467,16 +467,43 @@ p_df %>%
   head(10)
 
 #look at the presence/absence data
-View(results_df$detection_histories$`Phalaropus tricolor`)
+View(results_df$detection_histories$`Setophaga striata`)
 
 #look at the raw data
 View(brd_joineddata_clean %>%
-  filter(scientificName == "Amazilia rutila"))
+  filter(scientificName == "Cyanocitta cristata"))
 
 #look at the model results
 View(results_df$estimates$`Phalaropus tricolor`)
 
 ```
+
+
+For a given occupancy range, get species and related detections. It will be interesting to see the range. 
+
+```{r}
+estimates_df <- bind_rows(lapply(names(results_df$estimates), function(name) {
+  row <- results_df$estimates[[name]]
+  tibble(
+    scientificName = name,
+    vernacularName = row$vernacularName,
+    psi_Estimate = row$psi_Estimate,
+    psi_L95 = row$psi_L95,
+    psi_U95 = row$psi_U95,
+    p_Estimate = row$p_Estimate,
+    p_L95 = row$p_L95,
+    p_U95 = row$p_U95
+  )
+}))
+
+psi_range_species <- estimates_df %>%
+  filter(psi_Estimate >= 0.5, psi_Estimate <= 0.6) %>%
+  select(scientificName, vernacularName, psi_Estimate, p_Estimate, p_L95, p_U95) %>%
+  arrange(desc(p_Estimate))
+
+psi_range_species
+```
+Blue Jays and Great Horned Owls have similar occupancies but wildly different detections.
 
 
 ### Detection within a site

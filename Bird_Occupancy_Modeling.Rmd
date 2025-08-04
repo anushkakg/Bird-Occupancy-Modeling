@@ -75,9 +75,18 @@ if (file.exists("data/bird_counts.RData")) {
 Describe how the data are set up (i.e., there are two tables, with what data in them?)
 
 ```{r}
-
+dim(bird.counts$brd_perpoint)
+glimpse(bird.counts$brd_perpoint)
+min(bird.counts$brd_perpoint$startDate)
+max(bird.counts$brd_perpoint$startDate)
 ```
 
+```{r}
+dim(bird.counts$brd_countdata)
+glimpse(bird.counts$brd_countdata)
+min(bird.counts$brd_countdata$startDate)
+max(bird.counts$brd_countdata$startDate)
+```
 
 ## Data Cleanup
 
@@ -570,3 +579,4 @@ What do we see in the output? is this cool? What is it teling us? yay birds.
 ### Community dynamics by species x site x year
 
 # Predictive/Causual Hypotheses
+

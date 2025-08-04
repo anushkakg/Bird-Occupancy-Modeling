@@ -202,7 +202,7 @@ Melanerpes carolinus (Red-bellied Woodpecker) across all sites
 
 ```{r}
 # Filter table by species
-bird_species <- "Acanthis flammea"
+bird_species <- "Melanerpes carolinus"
 brd_joineddata_model1 <- brd_joineddata_clean %>%
   filter(siteID %in% sites) %>%
   filter(scientificName == bird_species)
@@ -482,10 +482,10 @@ View(results_df$detection_histories$`Setophaga striata`)
 
 #look at the raw data
 View(brd_joineddata_clean %>%
-  filter(scientificName == "Cyanocitta cristata"))
+  filter(scientificName == "Falco peregrinus"))
 
 #look at the model results
-View(results_df$estimates$`Phalaropus tricolor`)
+View(results_df$estimates$`Falco peregrinus`)
 
 ```
 
@@ -508,7 +508,7 @@ estimates_df <- bind_rows(lapply(names(results_df$estimates), function(name) {
 }))
 
 psi_range_species <- estimates_df %>%
-  filter(psi_Estimate >= 0.5, psi_Estimate <= 0.6) %>%
+  filter(psi_Estimate >= 0.2, psi_Estimate <= 0.3) %>%
   select(scientificName, vernacularName, psi_Estimate, p_Estimate, p_L95, p_U95) %>%
   arrange(desc(p_Estimate))
 

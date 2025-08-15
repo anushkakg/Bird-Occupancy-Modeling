@@ -21,7 +21,10 @@ Data Product: https://data.neonscience.org/data-products/DP1.10003.001
 
 
 ## Occupancy Modeling
-Occupancy models are used to help estimate true occupancy of a species and can help account for imperfect detection of organisms in a study. 
+Occupancy models are used to help estimate true occupancy of a species and can help account for imperfect detection of organisms in a study.
+
+Occupancy (psi) = the probability that a species occurs at a site.
+Detection (p) = the probability that a species is detected at a site, given occupancy
 
 # Setup
 ## Importing libraries
@@ -34,7 +37,7 @@ library(stringr)
 library(ggplot2) # library for visualization
 ```
 
-## Importing Data
+## Importing NEON Data
 ```{r}
 large_sites <- c(
   "BARR", "BART", "BONA", "CLBJ", "CPER", "DEJU", "DSNY", "GRSM",
@@ -60,6 +63,8 @@ if (file.exists("data/bird_counts.RData")) {
   load("data/bird_counts.RData")
 } else {
   
+  
+  ###todo: add NEON token
   bird.counts <- loadByProduct(dpID="DP1.10003.001",
                                site=sites,
                                startdate="2018-01",
@@ -88,7 +93,7 @@ min(bird.counts$brd_countdata$startDate)
 max(bird.counts$brd_countdata$startDate)
 ```
 
-## Data Cleanup
+## Data Preparation
 
 First, we need to do some generic data cleanup.
 
@@ -184,6 +189,8 @@ names(brd_joineddata_clean) <- gsub("\\.count$", "", names(brd_joineddata_clean)
 
 Because there is inconsistent sampling across sites (i.e., some sites are larger than others and not all plots within a site were continuously sampled over time), in order to do analyses across sites, we need to make sure that the data are standardized with respect to amount of sampling time.
 
+Actually - a way to get around this might be to just add a detection covariate for time or number of surveys to account for this. 
+
 ```{r}
 
 ```
@@ -192,13 +199,13 @@ Because there is inconsistent sampling across sites (i.e., some sites are larger
 
 Great, now that our data are cleaned and standardized, we can start doing some basic analyses. First, lets take a look at a single species within a site in terms of its detection and occupancy. 
 
-## Single Occupancy Models
+## Single-season Occupancy Model
 
 ### Single Species
 
 Melanerpes carolinus (Red-bellied Woodpecker) across all sites
 
-#### Data Munging (Create the occupancy table and covariants)
+#### Data Munging (Create the occupancy table and covariants, if any)
 
 ```{r}
 # Filter table by species
@@ -508,14 +515,130 @@ estimates_df <- bind_rows(lapply(names(results_df$estimates), function(name) {
 }))
 
 psi_range_species <- estimates_df %>%
-  filter(psi_Estimate >= 0.2, psi_Estimate <= 0.3) %>%
+  filter(psi_Estimate >= 0.5, psi_Estimate <= 0.6) %>%
   select(scientificName, vernacularName, psi_Estimate, p_Estimate, p_L95, p_U95) %>%
   arrange(desc(p_Estimate))
 
 psi_range_species
 ```
-Blue Jays and Great Horned Owls have similar occupancies but wildly different detections.
+Blue Jays and Great Horned Owls have similar occupancies (.51 and .52) but wildly different detections (.91 and .23).
 
+## Adding Covariates
+Detectability and occupancy of a species can be influenced by many different random effects, such as:
+
+Survey characteristics:
+
+* The observer: some observers may be better at spotting individuals of a species that are particularly camouflaged to their environments
+
+* The weather: adverse weather conditions such as rain or snow can impact visibility during a study, and therefore impact detection probability
+
+Site characteristics: sites with heavy cover or dense forests may decrease detection probability and make it harder for observers to identify the species
+
+* Example: Sitka black-tailed deer that live in the boreal forests in southeast Alaska may be harder to spot than mule deer living in more open ecosystems in Nevada
+
+We can include data about these characteristics in our model to either a) describe previously known variation and thereby improve the model fit or b) test to see whether occupancy/detection of a site is a function of a covariate.
+
+### Occupancy Covariates
+These are covariates that influence occupancy of a species. Occupancy probability can only be influenced by site characteristics.
+
+For example, shorebird occupancy would benefit from data on the extent of tidal flats, seabirds distributions are often influenced by ocean depth, and in many regions elevation plays a critical role in determining site occupancy.
+
+Melanerpes carolinus (Red-bellied Woodpecker) across all sites
+
+Lets add elevation as a site covariate and see how it improves the model fit.
+
+#### Data Munging (Create the covariants)
+
+We use the same occupancy table as above, but we need to create a table with the site covariates (aka elevation).
+
+```{r}
+site_cov <- brd_perpoint_clean %>%
+  select(siteID, elevation) %>%
+  distinct(siteID, .keep_all = TRUE) %>%
+  tibble::column_to_rownames("siteID")
+```
+
+#### Create the Pao presence-absence object (Pao)
+```{r}
+birds_pao_model2 <- createPao(
+  data = site_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023")],
+  unitnames = site_by_year$siteID,
+  unitcov = site_cov,
+  title = "Red-bellied Woodpecker"
+)
+```
+
+#### Run the actual model
+```{r}
+birds_occupancy_model2 <- occMod(
+  data = birds_pao_model2,           
+  model = list(psi ~ elevation,  p ~ 1),
+  type = 'so'
+  )
+```
+
+#### Model Results
+
+```{r}
+mod.list <-  list(
+    birds_occupancy_model1, 
+    birds_occupancy_model2
+)
+aictable <- createAicTable(mod.list = mod.list, use.aicc = TRUE)
+aictable$table
+
+```
+Looking at the two models, we can briefly look at the AIC values. The AIC for the model with elevation is lower (better)(), so the principle of parsimony suggests this is the better model: it is the more parsimonous model when considering both fit and number of parameters.
+
+We see that compared to the original model that did not account for elevation there are 3 parameters vs 2. We can calculate a p value to quantify how much better of a fit this model is.
+
+```{r}
+#get the difference in the neg2loglike between the two models
+diff <- abs(birds_occupancy_model1$neg2loglike - birds_occupancy_model2$neg2loglike)
+
+#look up our observed difference on a chi-square distribution with 1 degree of freedom to get p value
+pchisq(diff, df =  1, lower.tail = FALSE)
+
+```
+A p value of 1.74e-17 is very low so we can confidently reject the null hypothesis.
+
+This shows that Melanerpes carolinus has an occupancy probability (psi) of 41% (i.e., if you go to any of these sites, there is a 41% chance of this bird occupying the site) and a detection probability (p) of 91% (i.e., if you visit a site and the bird occupies it, there is a 91% chance you will detect it)
+
+```{r}
+ests <- as.data.frame(print_one_site_estimates(mod = birds_occupancy_model2))
+
+ests <- ests[1:2,] %>% 
+  mutate(parm = c("psi", "p")) %>% 
+  select(parm, est, se, lower, upper) %>% 
+  rename(., 
+    c(
+      Parameter = parm,
+      Estimate = est,
+      SE = se,
+      L95 = lower,
+      U95 = upper
+    )
+  ) %>% 
+  `rownames<-`(seq_len(nrow(ests[1:2,])))
+
+ests
+```
+
+
+```{r}
+ggplot(ests, aes(x = Parameter, y = Estimate)) +
+  labs(x = "Parameter", y = "Estimate") +
+  geom_bar(stat = 'identity') +
+  geom_errorbar(aes(ymin = L95, ymax = U95), width = 0.2) +
+  theme_bw()
+
+```
+
+
+### Detection Covatiates
+Can also be unique for each site as well as the survey
+
+It is important to recognize that detection probability can be influenced by either survey characteristics or site characteristics.
 
 
 Ignore everything after this
@@ -524,48 +647,6 @@ Ignore everything after this
 
 ## Detection
 ### Detection by species
-Something descriptive about setup and how we're rearranging the data
-```{r Setup}
-#the end of this should be a table with species (row) x year (cols)
-counts <- bird.counts$brd_countdata
-counts$year <- as.numeric(substr(counts$startDate, 1, 4)) 
-
-# add year column
-counts <- counts %>% 
-          group_by(year)
-View(counts)
-
-# simplify to detection by year and species
-counts_by_year <- counts %>%
-  count(year, scientificName) %>% 
-  filter(!is.na(scientificName))
-View(counts_by_year)
-
-# convert to wide format: species as rows, years as columns
-wide_df <- counts_by_year %>% 
-pivot_wider(
-    id_cols = scientificName,       
-    names_from = year, 
-    values_from = n,
-    values_fill = 0
-  )
-
-# View Resulting Table
-View(wide_df)
-```
-
-Something descriptive about what it is we're doing
-```{r Model}
-
-```
-
-something describing the outputs
-```{r Outputs}
-
-```
-
-What do we see in the output? is this cool? What is it teling us? yay birds.
-
 ### Detection by species x site
 ### Detection by species x site x year
 

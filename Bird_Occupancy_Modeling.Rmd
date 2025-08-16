@@ -297,6 +297,7 @@ ggplot(ests, aes(x = Parameter, y = Estimate)) +
 ### Across all Species
 
 #### Create a function
+todo: change the vars to be just in scope for the function
 ```{r}
 run_occ_for_species_list <- function(species_df, brd_joineddata_clean, brd_perpoint_clean, sites, years = c("2018", "2019", "2020", "2021", "2022", "2023")) {
   
@@ -485,7 +486,7 @@ p_df %>%
   head(10)
 
 #look at the presence/absence data
-View(results_df$detection_histories$`Setophaga striata`)
+View(results_df$detection_histories$`Sialia currucoides`)
 
 #look at the raw data
 View(brd_joineddata_clean %>%
@@ -549,14 +550,26 @@ Lets add elevation as a site covariate and see how it improves the model fit.
 
 #### Data Munging (Create the covariants)
 
-We use the same occupancy table as above, but we need to create a table with the site covariates (aka elevation).
+We use the same occupancy table as above, but we need to create a table with the site covariates (aka nlcdClass).
 
 ```{r}
+#categorical
+#site_cov <- brd_perpoint_clean %>%
+#  select(siteID, nlcdClass) %>%
+#  distinct(siteID, .keep_all = TRUE) %>%
+#  mutate(nlcdClass = as.factor(nlcdClass)) %>%
+#  tibble::column_to_rownames("siteID")
+
+#non-categorical
 site_cov <- brd_perpoint_clean %>%
   select(siteID, elevation) %>%
   distinct(siteID, .keep_all = TRUE) %>%
   tibble::column_to_rownames("siteID")
+
+
 ```
+
+todo: Plot the elevation for each site.
 
 #### Create the Pao presence-absence object (Pao)
 ```{r}
@@ -584,11 +597,11 @@ mod.list <-  list(
     birds_occupancy_model1, 
     birds_occupancy_model2
 )
-aictable <- createAicTable(mod.list = mod.list, use.aicc = TRUE)
+aictable <- createAicTable(mod.list = mod.list)
 aictable$table
 
 ```
-Looking at the two models, we can briefly look at the AIC values. The AIC for the model with elevation is lower (better)(), so the principle of parsimony suggests this is the better model: it is the more parsimonous model when considering both fit and number of parameters.
+Looking at the two models, we can briefly look at the AIC values. The AIC for the model with nlcdClass is lower (better), so the principle of parsimony suggests this is the better model: it is the more parsimonous model when considering both fit and number of parameters.
 
 We see that compared to the original model that did not account for elevation there are 3 parameters vs 2. We can calculate a p value to quantify how much better of a fit this model is.
 
@@ -597,12 +610,27 @@ We see that compared to the original model that did not account for elevation th
 diff <- abs(birds_occupancy_model1$neg2loglike - birds_occupancy_model2$neg2loglike)
 
 #look up our observed difference on a chi-square distribution with 1 degree of freedom to get p value
-pchisq(diff, df =  1, lower.tail = FALSE)
+pchisq(diff, df = 1, lower.tail = FALSE)
 
 ```
-A p value of 1.74e-17 is very low so we can confidently reject the null hypothesis.
+A p value of 2.356024e-05 is low so we can confidently reject the null hypothesis.
 
-This shows that Melanerpes carolinus has an occupancy probability (psi) of 41% (i.e., if you go to any of these sites, there is a 41% chance of this bird occupying the site) and a detection probability (p) of 91% (i.e., if you visit a site and the bird occupies it, there is a 91% chance you will detect it)
+```{r}
+coef(birds_occupancy_model2, param = 'psi', prob = 0.95)
+
+data <- cbind(site_cov, birds_occupancy_model2$real$psi) %>% 
+  distinct(.keep_all = TRUE) %>%
+  arrange(elevation)
+
+ggplot(data, aes(x = elevation, y = est)) +
+  geom_point() + 
+  labs(x = "Elevation",
+       y = "Predicted Occupancy") +
+  lims(y = c(0, 1), x = c(0, 3100))
+```
+
+
+This shows that Melanerpes carolinus has an occupancy probability (psi) of 80% (i.e., if you go to any of these sites, there is a 80% chance of this bird occupying the site) and a detection probability (p) of 91% (i.e., if you visit a site and the bird occupies it, there is a 91% chance you will detect it)
 
 ```{r}
 ests <- as.data.frame(print_one_site_estimates(mod = birds_occupancy_model2))

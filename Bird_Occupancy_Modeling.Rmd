@@ -490,7 +490,7 @@ View(results_df$detection_histories$`Sialia currucoides`)
 
 #look at the raw data
 View(brd_joineddata_clean %>%
-  filter(scientificName == "Falco peregrinus"))
+  filter(scientificName == "Melanerpes carolinus"))
 
 #look at the model results
 View(results_df$estimates$`Falco peregrinus`)
@@ -629,7 +629,7 @@ ggplot(data, aes(x = elevation, y = est)) +
   lims(y = c(0, 1))
 ```
 
-### Detection Covatiates
+### Detection Covariates
 Can also be unique for each site as well as the survey
 
 It is important to recognize that detection probability can be influenced by either survey characteristics or site characteristics.

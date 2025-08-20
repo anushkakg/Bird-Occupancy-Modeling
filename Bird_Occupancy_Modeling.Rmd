@@ -79,18 +79,114 @@ if (file.exists("data/bird_counts.RData")) {
 
 Describe how the data are set up (i.e., there are two tables, with what data in them?)
 
+CountData:
 ```{r}
-dim(bird.counts$brd_perpoint)
-glimpse(bird.counts$brd_perpoint)
-min(bird.counts$brd_perpoint$startDate)
-max(bird.counts$brd_perpoint$startDate)
+# Time distribution (number of observations per year)
+bird.counts$brd_perpoint %>%
+  mutate(year = lubridate::year(startDate)) %>%
+  ggplot(aes(x = factor(year))) +
+  geom_bar(fill = "forestgreen") +
+  ylim(0, 4000) + 
+  labs(
+    title = "Distribution of Observations Over Time (Perpoint)",
+    x = "Year",
+    y = "Number of Observations"
+  ) +
+  theme_minimal()
+
+# % missing for each column
+missing_pct <- sapply(bird.counts$brd_perpoint, function(x) {
+  round(sum(is.na(x)) / length(x) * 100, 2)
+})
+
+missing_df <- data.frame(
+  column = names(missing_pct),
+  missing_percent = missing_pct
+) %>%
+  filter(missing_percent > 0)  # show only columns with missing values
+
+ggplot(missing_df, aes(x = reorder(column, -missing_percent), y = missing_percent)) +
+  geom_bar(stat = "identity", fill = "forestgreen") +
+  labs(
+    title = "Percentage of Missing Data by Column (Perpoint)",
+    x = "Column",
+    y = "Missing Data (%)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Distribution by site
+ggplot(bird.counts$brd_perpoint, aes(x = siteID)) +
+  geom_bar(fill = "forestgreen") +
+  labs(title = "Distribution of Observations by Site (Perpoint)", x = "Site ID", y = "Count") +
+  theme(axis.text.x = element_text(angle = 90))
+
+# Species by site
+grouped_data <- bird.counts$brd_countdata %>%
+    group_by(siteID)
+  
+summarized_data <- grouped_data %>%
+    summarize(num_species = n_distinct(scientificName)) 
+    
+ggplot(summarized_data, aes(x = siteID, y = num_species)) +
+  geom_bar(stat = "identity", fill = "forestgreen") +
+  labs(title = "NUmber of Species Observed by Site (PerPoint)", x = "Site ID", y = "Number of Species") +
+  theme(axis.text.x = element_text(angle = 90))
+
 ```
 
+PerPoint
 ```{r}
-dim(bird.counts$brd_countdata)
-glimpse(bird.counts$brd_countdata)
-min(bird.counts$brd_countdata$startDate)
-max(bird.counts$brd_countdata$startDate)
+# Time distribution (number of observations per year)
+bird.counts$brd_countdata %>%
+  mutate(year = lubridate::year(startDate)) %>%
+  ggplot(aes(x = factor(year))) +
+  geom_bar(fill = "steelblue") +
+  labs(
+    title = "Distribution of Observations Over Time",
+    x = "Year",
+    y = "Number of Observations"
+  ) +
+  theme_minimal()
+
+# % missing for each column
+missing_pct <- sapply(bird.counts$brd_countdata, function(x) {
+  round(sum(is.na(x)) / length(x) * 100, 2)
+})
+
+missing_df <- data.frame(
+  column = names(missing_pct),
+  missing_percent = missing_pct
+) %>%
+  filter(missing_percent > 0)
+
+ggplot(missing_df, aes(x = reorder(column, -missing_percent), y = missing_percent)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(
+    title = "Percentage of Missing Data by Column",
+    x = "Column",
+    y = "Missing Data (%)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Observations by site
+ggplot(bird.counts$brd_countdata, aes(x = siteID)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Distribution of Observations by Site", x = "Site ID", y = "Count") +
+  theme(axis.text.x = element_text(angle = 90))
+
+# Species by site
+grouped_data <- bird.counts$brd_countdata %>%
+    group_by(siteID)
+  
+summarized_data <- grouped_data %>%
+    summarize(num_species = n_distinct(scientificName)) 
+    
+ggplot(summarized_data, aes(x = siteID, y = num_species)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Number of Species Observed by Site", x = "Site ID", y = "Number of Species") +
+  theme(axis.text.x = element_text(angle = 90))
 ```
 
 ## Data Preparation
@@ -654,4 +750,7 @@ Ignore everything after this
 ### Community dynamics by species x site x year
 
 # Predictive/Causual Hypotheses
+
+
+
 

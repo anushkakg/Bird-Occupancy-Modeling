@@ -88,7 +88,7 @@ bird.counts$brd_perpoint %>%
   geom_bar(fill = "forestgreen") +
   ylim(0, 4000) + 
   labs(
-    title = "Distribution of Observations Over Time (Perpoint)",
+    title = "Distribution of Observations Over Time",
     x = "Year",
     y = "Number of Observations"
   ) +
@@ -108,7 +108,7 @@ missing_df <- data.frame(
 ggplot(missing_df, aes(x = reorder(column, -missing_percent), y = missing_percent)) +
   geom_bar(stat = "identity", fill = "forestgreen") +
   labs(
-    title = "Percentage of Missing Data by Column (Perpoint)",
+    title = "Percentage of Missing Data by Column",
     x = "Column",
     y = "Missing Data (%)"
   ) +
@@ -118,7 +118,7 @@ ggplot(missing_df, aes(x = reorder(column, -missing_percent), y = missing_percen
 # Distribution by site
 ggplot(bird.counts$brd_perpoint, aes(x = siteID)) +
   geom_bar(fill = "forestgreen") +
-  labs(title = "Distribution of Observations by Site (Perpoint)", x = "Site ID", y = "Count") +
+  labs(title = "Distribution of Observations by Site", x = "Site ID", y = "Count") +
   theme(axis.text.x = element_text(angle = 90))
 
 # Species by site
@@ -130,7 +130,7 @@ summarized_data <- grouped_data %>%
     
 ggplot(summarized_data, aes(x = siteID, y = num_species)) +
   geom_bar(stat = "identity", fill = "forestgreen") +
-  labs(title = "NUmber of Species Observed by Site (PerPoint)", x = "Site ID", y = "Number of Species") +
+  labs(title = "Number of Species Observed by Site", x = "Site ID", y = "Number of Species") +
   theme(axis.text.x = element_text(angle = 90))
 
 ```
@@ -750,6 +750,7 @@ Ignore everything after this
 ### Community dynamics by species x site x year
 
 # Predictive/Causual Hypotheses
+
 
 
 

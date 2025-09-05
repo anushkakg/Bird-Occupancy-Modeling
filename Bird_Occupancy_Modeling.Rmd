@@ -730,28 +730,65 @@ Can also be unique for each site as well as the survey
 
 It is important to recognize that detection probability can be influenced by either survey characteristics or site characteristics.
 
+We are going to see whether cloud cover of the survey affects detection of Red-bellied Woodpecker.
 
-Ignore everything after this
-----------------------------------------------------------------------
+#### Data Munging (Create the covariants)
+
+We use the same occupancy table as above, but we need to create a table with the survey covariates.
+
+```{r}
+surveycov <- 
 
 
-## Detection
-### Detection by species
-### Detection by species x site
-### Detection by species x site x year
+```
 
-## Within a site
-### Detection within a site
-### Occupancy within a site
+todo: Plot the cloud cover for each survey.
 
-## Local community dynamics
-### Community dynamics by species
-### Community dynamics by species x site
-### Community dynamics by species x site x year
+#### Create the Pao presence-absence object (Pao)
+```{r}
+birds_pao_model3 <- createPao(
+  data = site_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023")],
+  unitnames = site_by_year$siteID,
+  survcov = surveycov,
+  title = "Whatever goes here"
+)
+```
+
+#### Run the actual model
+```{r}
+birds_occupancy_model3 <- occMod(
+  data = birds_pao_model3,           
+  model = list(psi ~ 1,  p ~ cloudCover),
+  type = 'so'
+  )
+```
+
+#### Model Results
+
+```{r}
+mod.list <-  list(
+    birds_occupancy_model1, 
+    birds_occupancy_model3
+)
+aictable <- createAicTable(mod.list = mod.list)
+aictable$table
+
+```
+Looking at the two models, we can briefly look at the AIC values. The AIC for the model with elevation is lower (better), so the principle of parsimony suggests this is the better model: it is the more parsimonous model when considering both fit and number of parameters.
+
+```{r}
+coef(birds_occupancy_model3, param = 'psi', prob = 0.95)
+
+data <- cbind(site_cov, birds_occupancy_model3$real$psi) %>% 
+  distinct(.keep_all = TRUE) %>%
+  arrange(cloudClover)
+
+ggplot(data, aes(x = cloudCover, y = est)) +
+  geom_point() + 
+  labs(x = "Cloud Cover",
+       y = "Prediected Detection") +
+  lims(y = c(0, 1))
+```
 
 # Predictive/Causual Hypotheses
-
-
-
-
 

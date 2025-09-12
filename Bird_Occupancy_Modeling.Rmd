@@ -796,7 +796,7 @@ birds_pao_model3 <- createPao(
   data = site_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023")],
   unitnames = site_by_year$siteID,
   survcov = surveycov,
-  title = "Whatever goes here"
+  title = "Sharp-shinned Hawk"
 )
 ```
 
@@ -845,6 +845,7 @@ ggplot(data = predictions, aes(x = cloudCover, y = est)) +
  lims(y = c(0, 1))
 
 ```
-# Predictive/Causual Hypotheses
+# Predictive/Causal Hypotheses
+
 
 

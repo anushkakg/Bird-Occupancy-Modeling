@@ -198,11 +198,15 @@ First, we need to do some generic data cleanup.
 ```{r}
 brd_perpoint_clean <- bird.counts$brd_perpoint %>%
   mutate(year = str_extract(eventID, "\\d{4}"))%>%
-  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_"))
+  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_")) %>%
+  mutate(locationID = paste(plotID, "point", pointID, sep = "_")) %>%
+  mutate(timeID = paste(year, "bout", boutNumber, sep = "_"))
 
 brd_countdata_clean <- bird.counts$brd_countdata %>%
   mutate(year = str_extract(eventID, "\\d{4}"))%>%
-  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_"))
+  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_")) %>%
+  mutate(locationID = paste(plotID, "point", pointID, sep = "_")) %>%
+  mutate(timeID = paste(year, "bout", boutNumber, sep = "_"))
 
 ```
 
@@ -737,45 +741,48 @@ We are going to see whether cloud cover of the survey affects detection of Red-b
 ```{r}
 
 # Filter table by species
-bird_species <- "Accipiter striatus"
-brd_joineddata_model1 <- brd_joineddata_clean %>%
-  filter(siteID %in% sites) %>%
+bird_species <- "Buteo jamaicensis"
+
+brd_joineddata_model3 <- brd_joineddata_clean %>%
   filter(scientificName == bird_species)
 
 # Get all valid surveys years across sites (so we can fill in NAs)
-valid_site_years <- brd_perpoint_clean %>%
-  distinct(siteID, year)
+valid_site_time <- brd_perpoint_clean %>%
+  distinct(locationID, timeID
+)
 
 # Get detections — only species *actually observed at a site* (so we can fill in 0s)
-detections <- brd_joineddata_model1 %>%
-  group_by(siteID, year) %>%
+detections <- brd_joineddata_model3 %>%
+  group_by(locationID, timeID
+) %>%
   summarize(present = 1, .groups = "drop")
 
 # Join and fill
-site_by_year <- valid_site_years %>%
-  left_join(detections, by = c("siteID", "year")) %>%
+site_by_time <- valid_site_time %>%
+  left_join(detections, by = c("locationID", "timeID")) %>%
   mutate(present = replace_na(present, 0)) %>%
   pivot_wider(
-    names_from = year,
+    names_from = timeID,
     values_from = present
   )
 
 # Create the detection covariate table: average cloud cover per site per year
-cloud_cover_by_site_year <- brd_perpoint_clean %>%
-  group_by(siteID, year) %>%
+cloud_cover_by_site_time <- brd_perpoint_clean %>%
+  group_by(locationID, timeID
+) %>%
   summarize(
     cloudCover = mean((startCloudCoverPercentage + endCloudCoverPercentage)/2, na.rm = TRUE),
     .groups = "drop"
   ) %>%
   pivot_wider(
-    names_from = year,
+    names_from = timeID
+,
     values_from = cloudCover
   ) %>%
-  tibble::column_to_rownames('siteID') 
+  tibble::column_to_rownames('locationID') 
 
 # View result
-head(cloud_cover_by_site_year)
-
+head(cloud_cover_by_site_time)
   
 ```
 
@@ -784,7 +791,7 @@ We use the same occupancy table as above, but we need to create a table with the
 
 ```{r}
 surveycov <- data.frame(
-  cloudCover = unlist(cloud_cover_by_site_year)
+  cloudCover = unlist(cloud_cover_by_site_time)
   )
 row.names(surveycov) <- NULL
 ```

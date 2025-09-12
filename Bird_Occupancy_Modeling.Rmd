@@ -734,15 +734,61 @@ We are going to see whether cloud cover of the survey affects detection of Red-b
 
 #### Data Munging (Create the covariants)
 
+```{r}
+
+# Filter table by species
+bird_species <- "Accipiter striatus"
+brd_joineddata_model1 <- brd_joineddata_clean %>%
+  filter(siteID %in% sites) %>%
+  filter(scientificName == bird_species)
+
+# Get all valid surveys years across sites (so we can fill in NAs)
+valid_site_years <- brd_perpoint_clean %>%
+  distinct(siteID, year)
+
+# Get detections — only species *actually observed at a site* (so we can fill in 0s)
+detections <- brd_joineddata_model1 %>%
+  group_by(siteID, year) %>%
+  summarize(present = 1, .groups = "drop")
+
+# Join and fill
+site_by_year <- valid_site_years %>%
+  left_join(detections, by = c("siteID", "year")) %>%
+  mutate(present = replace_na(present, 0)) %>%
+  pivot_wider(
+    names_from = year,
+    values_from = present
+  )
+
+# Create the detection covariate table: average cloud cover per site per year
+cloud_cover_by_site_year <- brd_perpoint_clean %>%
+  group_by(siteID, year) %>%
+  summarize(
+    cloudCover = mean((startCloudCoverPercentage + endCloudCoverPercentage)/2, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from = year,
+    values_from = cloudCover
+  ) %>%
+  tibble::column_to_rownames('siteID') 
+
+# View result
+head(cloud_cover_by_site_year)
+
+  
+```
+
+
 We use the same occupancy table as above, but we need to create a table with the survey covariates.
 
 ```{r}
-surveycov <- 
-
-
+surveycov <- data.frame(
+  cloudCover = unlist(cloud_cover_by_site_year)
+  )
+row.names(surveycov) <- NULL
 ```
 
-todo: Plot the cloud cover for each survey.
 
 #### Create the Pao presence-absence object (Pao)
 ```{r}
@@ -777,18 +823,28 @@ aictable$table
 Looking at the two models, we can briefly look at the AIC values. The AIC for the model with elevation is lower (better), so the principle of parsimony suggests this is the better model: it is the more parsimonous model when considering both fit and number of parameters.
 
 ```{r}
-coef(birds_occupancy_model3, param = 'psi', prob = 0.95)
-
-data <- cbind(site_cov, birds_occupancy_model3$real$psi) %>% 
-  distinct(.keep_all = TRUE) %>%
-  arrange(cloudClover)
-
-ggplot(data, aes(x = cloudCover, y = est)) +
-  geom_point() + 
-  labs(x = "Cloud Cover",
-       y = "Prediected Detection") +
-  lims(y = c(0, 1))
+results <- print_one_site_estimates(
+  mod = birds_occupancy_model3,
+  site = 1)
 ```
 
+```{r}
+newdata <- data.frame(
+  cloudCover = seq(from = 0, to = 100, by = 5)
+  )
+predictions <- predict(birds_occupancy_model3, newdata, 'p')
+predictions$cloudCover <- newdata$cloudCover
+  
+# plot the predictions with ggplot2
+ggplot(data = predictions, aes(x = cloudCover, y = est)) +
+ geom_line() +
+ geom_line(aes(x = cloudCover, y = lower_0.95), linetype = "dashed") +
+ geom_line(aes(x = cloudCover, y = upper_0.95), linetype = "dashed") +
+ labs(x = "Cloud Cover Percentage", 
+      y = "Predicted detection") +
+ lims(y = c(0, 1))
+
+```
 # Predictive/Causual Hypotheses
+
 

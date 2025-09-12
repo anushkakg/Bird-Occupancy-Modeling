@@ -750,22 +750,21 @@ brd_joineddata_model3 <- brd_joineddata_clean %>%
 # Get all valid surveys years across sites (so we can fill in NAs)
 valid_site_time <- brd_perpoint_clean %>%
   filter(siteID %in% large_sites) %>%
-  distinct(locationID, timeID
-)
+  distinct(locationID, year)
 
 # Get detections — only species *actually observed at a site* (so we can fill in 0s)
 detections <- brd_joineddata_model3 %>%
   filter(siteID %in% large_sites) %>%
-  group_by(locationID, timeID
+  group_by(locationID, year
 ) %>%
   summarize(present = 1, .groups = "drop")
 
 # Join and fill
 site_by_time <- valid_site_time %>%
-  left_join(detections, by = c("locationID", "timeID")) %>%
+  left_join(detections, by = c("locationID", "year")) %>%
   mutate(present = replace_na(present, 0)) %>%
   pivot_wider(
-    names_from = timeID,
+    names_from = year,
     values_from = present
   ) %>%
   select(1, sort(names(.)[-1]))
@@ -773,13 +772,13 @@ site_by_time <- valid_site_time %>%
 # Create the detection covariate table: average cloud cover per site per year
 cloud_cover_by_site_time <- brd_perpoint_clean %>%
   filter(siteID %in% large_sites) %>%
-  group_by(locationID, timeID) %>%
+  group_by(locationID, year) %>%
   summarize(
     cloudCover = mean((startCloudCoverPercentage + endCloudCoverPercentage)/2),
     .groups = "drop"
   ) %>%
   pivot_wider(
-    names_from = timeID,
+    names_from = year,
     values_from = cloudCover
   ) %>%
   tibble::column_to_rownames('locationID') %>%

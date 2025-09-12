@@ -744,15 +744,18 @@ We are going to see whether cloud cover of the survey affects detection of Red-b
 bird_species <- "Buteo jamaicensis"
 
 brd_joineddata_model3 <- brd_joineddata_clean %>%
+  filter(siteID %in% large_sites) %>%
   filter(scientificName == bird_species)
 
 # Get all valid surveys years across sites (so we can fill in NAs)
 valid_site_time <- brd_perpoint_clean %>%
+  filter(siteID %in% large_sites) %>%
   distinct(locationID, timeID
 )
 
 # Get detections — only species *actually observed at a site* (so we can fill in 0s)
 detections <- brd_joineddata_model3 %>%
+  filter(siteID %in% large_sites) %>%
   group_by(locationID, timeID
 ) %>%
   summarize(present = 1, .groups = "drop")
@@ -764,22 +767,23 @@ site_by_time <- valid_site_time %>%
   pivot_wider(
     names_from = timeID,
     values_from = present
-  )
+  ) %>%
+  select(1, sort(names(.)[-1]))
 
 # Create the detection covariate table: average cloud cover per site per year
 cloud_cover_by_site_time <- brd_perpoint_clean %>%
-  group_by(locationID, timeID
-) %>%
+  filter(siteID %in% large_sites) %>%
+  group_by(locationID, timeID) %>%
   summarize(
-    cloudCover = mean((startCloudCoverPercentage + endCloudCoverPercentage)/2, na.rm = TRUE),
+    cloudCover = mean((startCloudCoverPercentage + endCloudCoverPercentage)/2),
     .groups = "drop"
   ) %>%
   pivot_wider(
-    names_from = timeID
-,
+    names_from = timeID,
     values_from = cloudCover
   ) %>%
-  tibble::column_to_rownames('locationID') 
+  tibble::column_to_rownames('locationID') %>%
+  select(sort(names(.)))
 
 # View result
 head(cloud_cover_by_site_time)

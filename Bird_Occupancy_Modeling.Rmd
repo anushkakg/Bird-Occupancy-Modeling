@@ -741,7 +741,7 @@ We are going to see whether cloud cover of the survey affects detection of Red-b
 ```{r}
 
 # Filter table by species
-bird_species <- "Buteo jamaicensis"
+bird_species <- "Melanerpes carolinus"
 
 brd_joineddata_model3 <- brd_joineddata_clean %>%
   filter(siteID %in% large_sites) %>%
@@ -760,8 +760,8 @@ detections <- brd_joineddata_model3 %>%
   summarize(present = 1, .groups = "drop")
 
 # Join and fill
-plot_by_year <- valid_site_years %>%
-  left_join(detections, by = c("plotID", "year")) %>%
+plot_by_year <- valid_plot_years %>%
+  left_join(detections, by = c("plotID","year")) %>%
   mutate(present = replace_na(present, 0)) %>%
   pivot_wider(
     names_from = year,
@@ -769,24 +769,47 @@ plot_by_year <- valid_site_years %>%
   ) %>%
   select(1, sort(names(.)[-1]))
 
-# Create the detection covariate table: average cloud cover per plot per year
-cloud_cover_by_plot_year <- brd_perpoint_clean %>%
-  filter(siteID %in% large_sites) %>%
-  group_by(plotID, year) %>%
-  summarize(
-    cloudCover = mean((startCloudCoverPercentage + endCloudCoverPercentage)/2),
-    .groups = "drop"
-  ) %>%
-  pivot_wider(
-    names_from = year,
-    values_from = cloudCover
-  ) %>%
-  tibble::column_to_rownames('plotID') %>%
-  select(sort(names(.)))
+# # Create the detection covariate table: average cloud cover per plot per year
+# cloud_cover_by_plot_year <- brd_perpoint_clean %>%
+#   filter(siteID %in% large_sites) %>%
+#   group_by(plotID, year) %>%
+#   summarize(
+#     cloudCover = mean((startCloudCoverPercentage + endCloudCoverPercentage) / 2),
+#     .groups = "drop"
+#   ) %>%
+#   pivot_wider(
+#     names_from = year,
+#     values_from = cloudCover
+#   ) %>%
+#   tibble::column_to_rownames('plotID') %>%
+#   select(sort(names(.)))
 
 # View result
-head(cloud_cover_by_site_year)
+#head(cloud_cover_by_plot_year)
   
+```
+
+```{r}
+
+get_mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+detection_method_all_surveys <- brd_joineddata_clean %>%
+  filter(siteID %in% large_sites) %>%
+  group_by(plotID, year) %>%
+  summarise(detectionMethod = get_mode(detectionMethod), .groups = "drop")
+
+det_method_matrix <- detection_method_all_surveys %>%
+  pivot_wider(
+    names_from = year,
+    values_from = detectionMethod
+  ) %>%
+  tibble::column_to_rownames("plotID")
+
+det_method_numeric <- det_method_matrix %>%
+  mutate(across(everything(), ~ as.numeric(as.factor(.))))
 ```
 
 
@@ -794,7 +817,7 @@ We use the same occupancy table as above, but we need to create a table with the
 
 ```{r}
 surveycov <- data.frame(
-  cloudCover = unlist(cloud_cover_by_site_time)
+  detMethod = unlist(det_method_matrix)
   )
 row.names(surveycov) <- NULL
 ```
@@ -803,10 +826,10 @@ row.names(surveycov) <- NULL
 #### Create the Pao presence-absence object (Pao)
 ```{r}
 birds_pao_model3 <- createPao(
-  data = site_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023")],
-  unitnames = site_by_year$siteID,
+  data = plot_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023")],
+  unitnames = plot_by_year$plotID,
   survcov = surveycov,
-  title = "Sharp-shinned Hawk"
+  title = "Red-Bellied Woodpecker"
 )
 ```
 
@@ -814,7 +837,7 @@ birds_pao_model3 <- createPao(
 ```{r}
 birds_occupancy_model3 <- occMod(
   data = birds_pao_model3,           
-  model = list(psi ~ 1,  p ~ cloudCover),
+  model = list(psi ~ 1,  p ~ detMethod),
   type = 'so'
   )
 ```
@@ -839,23 +862,27 @@ results <- print_one_site_estimates(
 ```
 
 ```{r}
-newdata <- data.frame(
-  cloudCover = seq(from = 0, to = 100, by = 5)
+
+ggplot(data = data.frame(results), aes(x = rownames(results), y = est)) +
+  geom_bar(stat = 'identity') + 
+  geom_errorbar(aes(ymin = lower_0.95, ymax = upper_0.95, width = 0.2)) +
+  lims(y = c(0, 1)) +
+  labs(y = "Maximul likelihood estimate",
+       x = "Parameter")
+
+data <- data.frame(
+  detMethod = birds_pao_model3$survcov$detMethod, 
+  detections = as.factor(unlist(birds_pao_model3$det.data))
   )
-predictions <- predict(birds_occupancy_model3, newdata, 'p')
-predictions$cloudCover <- newdata$cloudCover
-  
-# plot the predictions with ggplot2
-ggplot(data = predictions, aes(x = cloudCover, y = est)) +
- geom_line() +
- geom_line(aes(x = cloudCover, y = lower_0.95), linetype = "dashed") +
- geom_line(aes(x = cloudCover, y = upper_0.95), linetype = "dashed") +
- labs(x = "Cloud Cover Percentage", 
-      y = "Predicted detection") +
- lims(y = c(0, 1))
+
+ggplot(data, aes(x = detMethod, fill = detections)) + 
+  geom_bar(stat = 'count') +
+  labs(x = "Detection Method", y = "Number of Surveys Conducted") +
+  theme(axis.text.x = element_text(angle = 45, margin = margin(t = 30)))
 
 ```
 # Predictive/Causal Hypotheses
+
 
 
 

@@ -789,6 +789,7 @@ plot_by_year <- valid_plot_years %>%
   
 ```
 
+
 ```{r}
 
 get_mode <- function(x) {
@@ -796,20 +797,25 @@ get_mode <- function(x) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-detection_method_all_surveys <- brd_joineddata_clean %>%
-  filter(siteID %in% large_sites) %>%
+detection_method_all_detections <- brd_joineddata_model3 %>%
   group_by(plotID, year) %>%
   summarise(detectionMethod = get_mode(detectionMethod), .groups = "drop")
 
-det_method_matrix <- detection_method_all_surveys %>%
+det_method_matrix <- valid_plot_years %>%
+  left_join(detection_method_all_detections, by = c("plotID","year")) %>%
+  mutate(detectionMethod = replace_na(detectionMethod, 'not_detected')) %>%
   pivot_wider(
     names_from = year,
     values_from = detectionMethod
   ) %>%
-  tibble::column_to_rownames("plotID")
+  select(1, sort(names(.)[-1]))
 
-det_method_numeric <- det_method_matrix %>%
-  mutate(across(everything(), ~ as.numeric(as.factor(.))))
+det_method_matrix <- as.data.frame(det_method_matrix)
+rownames(det_method_matrix) <- det_method_matrix$plotID
+det_method_matrix <- det_method_matrix[ , -1]
+
+#det_method_numeric <- det_method_matrix %>%
+#  mutate(across(everything(), ~ as.numeric(as.factor(.))))
 ```
 
 
@@ -867,15 +873,15 @@ ggplot(data = data.frame(results), aes(x = rownames(results), y = est)) +
   geom_bar(stat = 'identity') + 
   geom_errorbar(aes(ymin = lower, ymax = upper, width = 0.2)) +
   lims(y = c(0, 1)) +
-  labs(y = "Maximul likelihood estimate",
+  labs(y = "Maximum likelihood estimate",
        x = "Parameter")
 
 data <- data.frame(
-  detMethod = birds_pao_model3$survcov$detMethod, 
-  detections = as.factor(unlist(birds_pao_model3$det.data))
-  )
+  detMethod = birds_pao_model3$survcov$detMethod
+  ) %>%
+  filter(!is.na(detMethod), detMethod != "not_detected")
 
-ggplot(data, aes(x = detMethod, fill = detections)) + 
+ggplot(data, aes(x = detMethod)) + 
   geom_bar(stat = 'count') +
   labs(x = "Detection Method", y = "Number of Surveys Conducted") +
   theme(axis.text.x = element_text(angle = 45, margin = margin(t = 30)))

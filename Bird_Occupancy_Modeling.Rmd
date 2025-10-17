@@ -739,6 +739,10 @@ We are going to see whether cloud cover of the survey affects detection of Red-b
 #### Data Munging (Create the covariants)
 
 ```{r}
+get_mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
 
 # Filter table by species
 bird_species <- "Melanerpes carolinus"
@@ -751,14 +755,13 @@ brd_joineddata_model3 <- brd_joineddata_clean %>%
 valid_plot_years <- brd_perpoint_clean %>%
   filter(siteID %in% large_sites) %>%
   distinct(plotID, year)
-
+  
 # Get detections — only species *actually observed at a site* (so we can fill in 0s)
 detections <- brd_joineddata_model3 %>%
   filter(siteID %in% large_sites) %>%
-  group_by(plotID, year
-) %>%
+  group_by(plotID, year) %>%
   summarize(present = 1, .groups = "drop")
-
+  
 # Join and fill
 plot_by_year <- valid_plot_years %>%
   left_join(detections, by = c("plotID","year")) %>%
@@ -768,24 +771,23 @@ plot_by_year <- valid_plot_years %>%
     values_from = present
   ) %>%
   select(1, sort(names(.)[-1]))
+  
+measured_by_all_detections <- brd_joineddata_model3 %>%
+  group_by(plotID, year) %>%
+  summarise(measuredBy = get_mode(measuredBy), .groups = "drop")
 
-# # Create the detection covariate table: average cloud cover per plot per year
-# cloud_cover_by_plot_year <- brd_perpoint_clean %>%
-#   filter(siteID %in% large_sites) %>%
-#   group_by(plotID, year) %>%
-#   summarize(
-#     cloudCover = mean((startCloudCoverPercentage + endCloudCoverPercentage) / 2),
-#     .groups = "drop"
-#   ) %>%
-#   pivot_wider(
-#     names_from = year,
-#     values_from = cloudCover
-#   ) %>%
-#   tibble::column_to_rownames('plotID') %>%
-#   select(sort(names(.)))
+measured_by_matrix <- valid_plot_years %>%
+  left_join(measured_by_all_detections, by = c("plotID","year")) %>%
+  mutate(measuredBy = replace_na(measuredBy, 'not_detected')) %>%
+  pivot_wider(
+    names_from = year,
+    values_from = measuredBy
+  ) %>%
+  select(1, sort(names(.)[-1]))
 
-# View result
-#head(cloud_cover_by_plot_year)
+measured_by_matrix <- as.data.frame(measured_by_matrix)
+rownames(measured_by_matrix) <- measured_by_matrix$plotID
+measured_by_matrix <- measured_by_matrix[ , -1]
   
 ```
 
@@ -823,7 +825,7 @@ We use the same occupancy table as above, but we need to create a table with the
 
 ```{r}
 surveycov <- data.frame(
-  detMethod = unlist(det_method_matrix)
+  measuredBy = as.vector(t(as.matrix(measured_by_matrix)))
   )
 row.names(surveycov) <- NULL
 ```
@@ -843,7 +845,7 @@ birds_pao_model3 <- createPao(
 ```{r}
 birds_occupancy_model3 <- occMod(
   data = birds_pao_model3,           
-  model = list(psi ~ 1,  p ~ detMethod),
+  model = list(psi ~ 1,  p ~ measuredBy),
   type = 'so'
   )
 ```
@@ -877,20 +879,21 @@ ggplot(data = data.frame(results), aes(x = rownames(results), y = est)) +
        x = "Parameter")
 
 data <- data.frame(
-  detMethod = birds_pao_model3$survcov$detMethod
+  measuredBy = birds_pao_model3$survcov$measuredBy
   ) %>%
-  filter(!is.na(detMethod), detMethod != "not_detected")
+  filter(!is.na(measuredBy), measuredBy != "not_detected")
 
-ggplot(data, aes(x = detMethod)) + 
+ggplot(data, aes(x = measuredBy)) + 
   geom_bar(stat = 'count') +
   labs(x = "Detection Method", y = "Number of Surveys Conducted") +
-  theme(axis.text.x = element_text(angle = 45, margin = margin(t = 30)))
+  theme(axis.text.x = element_text(angle = 90, margin = margin(t = 5)))
 
 ```
 
 ## Multi-season Occupancy Model
 
 # Predictive/Causal Hypotheses
+
 
 
 

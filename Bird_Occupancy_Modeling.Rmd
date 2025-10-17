@@ -744,7 +744,7 @@ We are going to see whether temperature of the survey affects the detection of c
 #### Data Munging
 
 ##### Occupancy Table
-(by plot this time not site)
+By plot this time, not site since an entire site is not surveyed in a single survey, only a plot is
 
 ```{r}
 # Filter table by species

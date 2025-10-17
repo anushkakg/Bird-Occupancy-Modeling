@@ -885,7 +885,7 @@ data <- data.frame(
 
 ggplot(data, aes(x = measuredBy)) + 
   geom_bar(stat = 'count') +
-  labs(x = "Detection Method", y = "Number of Surveys Conducted") +
+  labs(x = "Measured By", y = "Number of Surveys Conducted") +
   theme(axis.text.x = element_text(angle = 90, margin = margin(t = 5)))
 
 ```
@@ -893,6 +893,7 @@ ggplot(data, aes(x = measuredBy)) +
 ## Multi-season Occupancy Model
 
 # Predictive/Causal Hypotheses
+
 
 
 

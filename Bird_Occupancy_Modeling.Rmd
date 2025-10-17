@@ -739,17 +739,13 @@ We are going to see whether cloud cover of the survey affects detection of Red-b
 #### Data Munging (Create the covariants)
 
 ```{r}
-get_mode <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
-
 # Filter table by species
 bird_species <- "Melanerpes carolinus"
 
 brd_joineddata_model3 <- brd_joineddata_clean %>%
   filter(siteID %in% large_sites) %>%
-  filter(scientificName == bird_species)
+  filter(scientificName == bird_species) %>%
+  filter(detectionMethod == "calling")
 
 # Get all valid surveys years across sites (so we can fill in NAs)
 valid_plot_years <- brd_perpoint_clean %>%
@@ -772,12 +768,23 @@ plot_by_year <- valid_plot_years %>%
   ) %>%
   select(1, sort(names(.)[-1]))
   
-measured_by_all_detections <- brd_joineddata_model3 %>%
+# Create the detection covariate table: average cloud cover per plot per year
+airTemp_by_plot_year <- brd_joineddata_model3 %>%
+  filter(siteID %in% large_sites) %>%
   group_by(plotID, year) %>%
-  summarise(measuredBy = get_mode(measuredBy), .groups = "drop")
+  summarize(
+    observedAirTemp = mean(observedAirTemp, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from = year,
+    values_from = observedAirTemp
+  ) %>%
+  tibble::column_to_rownames('plotID') %>%
+  select(sort(names(.)))
 
 measured_by_matrix <- valid_plot_years %>%
-  left_join(measured_by_all_detections, by = c("plotID","year")) %>%
+  left_join(airTemp_by_plot_year, by = c("plotID","year")) %>%
   mutate(measuredBy = replace_na(measuredBy, 'not_detected')) %>%
   pivot_wider(
     names_from = year,
@@ -893,9 +900,3 @@ ggplot(data, aes(x = measuredBy)) +
 ## Multi-season Occupancy Model
 
 # Predictive/Causal Hypotheses
-
-
-
-
-
-

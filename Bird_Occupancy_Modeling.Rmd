@@ -305,7 +305,9 @@ Great, now that our data are cleaned and standardized, we can start doing some b
 
 Melanerpes carolinus (Red-bellied Woodpecker) across all sites
 
-#### Data Munging (Create the occupancy table and covariants, if any)
+#### Data Munging
+
+##### Occupancy Table
 
 ```{r}
 # Filter table by species
@@ -648,8 +650,11 @@ Melanerpes carolinus (Red-bellied Woodpecker) across all sites
 
 Lets add elevation as a site covariate and see how it improves the model fit.
 
-#### Data Munging (Create the covariants)
+#### Data Munging
 
+##### Occupancy Table
+
+##### Covariants
 We use the same occupancy table as above, but we need to create a table with the site covariates (aka nlcdClass).
 
 ```{r}
@@ -734,9 +739,12 @@ Can also be unique for each site as well as the survey
 
 It is important to recognize that detection probability can be influenced by either survey characteristics or site characteristics.
 
-We are going to see whether cloud cover of the survey affects detection of Red-bellied Woodpecker.
+We are going to see whether temperature of the survey affects the detection of calling Red-bellied Woodpeckers.
 
-#### Data Munging (Create the covariants)
+#### Data Munging
+
+##### Occupancy Table
+(by plot this time not site)
 
 ```{r}
 # Filter table by species
@@ -767,10 +775,18 @@ plot_by_year <- valid_plot_years %>%
     values_from = present
   ) %>%
   select(1, sort(names(.)[-1]))
-  
-# Create the detection covariate table: average cloud cover per plot per year
-airTemp_by_plot_year <- brd_joineddata_model3 %>%
-  filter(siteID %in% large_sites) %>%
+
+head(plot_by_year, n=10)
+```
+
+
+##### Covariants
+
+```{r}
+
+env_variable = "observedAirTemp"
+
+measured_by_all_detections <- brd_joineddata_model3 %>%
   group_by(plotID, year) %>%
   summarize(
     observedAirTemp = mean(observedAirTemp, na.rm = TRUE),

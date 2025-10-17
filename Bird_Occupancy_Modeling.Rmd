@@ -904,7 +904,7 @@ coef(birds_occupancy_model3, 'p', prob = 0.95)
 ```
 Here, we can see that the beta estimate for kmPerHourObservedWindSpeed is slightly negative (i.e., as windspeed increases, detection for calling birds decreases) and 0 is not included in the confidence interval, so there is a statistically significant effect that windspeed affects detection
 
-If the lowerCI and upperCI contain 0 you cannot conclude the effect is statistically significant
+Remember, these coefficients are on the (unbounded) logit scale. The standard error is provided for each estimate, as are the 95% confidence intervals. The confidence intervals can be computed by hand as the estimate +/- 1.96 times the standard error. If the confidence interval encompasses 0, traditionally we say the estimate is “not statistically significant”. If the beta could reasonably be 0, it means the variable has no effect (or at least we don’t have evidence of its effect in the dataset).
 
 Lets plot something
 ```{r}

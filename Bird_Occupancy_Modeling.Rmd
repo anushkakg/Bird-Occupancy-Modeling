@@ -750,10 +750,12 @@ We are going to see whether temperature of the survey affects the detection of c
 # Filter table by species
 bird_species <- "Melanerpes carolinus"
 
+#unique(brd_joineddata_clean$detectionMethod)
+
 brd_joineddata_model3 <- brd_joineddata_clean %>%
   filter(siteID %in% large_sites) %>%
   filter(scientificName == bird_species) %>%
-  filter(detectionMethod == "calling")
+  filter(detectionMethod %in% c("singing", "calling", "other aural (e.g. wing beats)", "drumming", "calling and singing", "other aural and singing"))
 
 # Get all valid surveys years across sites (so we can fill in NAs)
 valid_plot_years <- brd_perpoint_clean %>%
@@ -774,7 +776,8 @@ plot_by_year <- valid_plot_years %>%
     names_from = year,
     values_from = present
   ) %>%
-  select(1, sort(names(.)[-1]))
+  select(1, sort(names(.)[-1])) %>%
+  arrange(plotID)
 
 head(plot_by_year, n=10)
 ```
@@ -782,14 +785,13 @@ head(plot_by_year, n=10)
 
 ##### Covariants
 
+observedAirTemp
 ```{r}
-
-env_variable = "observedAirTemp"
-
-measured_by_all_detections <- brd_joineddata_model3 %>%
+observedAirTemp_surveys <- brd_joineddata_clean %>% #this needs to be from the whole dataset, since environmental variables are not dependent on bird detection
+  filter(siteID %in% large_sites) %>%
   group_by(plotID, year) %>%
   summarize(
-    observedAirTemp = mean(observedAirTemp, na.rm = TRUE),
+    observedAirTemp = na_if(mean(observedAirTemp, na.rm = TRUE), NaN),
     .groups = "drop"
   ) %>%
   pivot_wider(
@@ -799,58 +801,76 @@ measured_by_all_detections <- brd_joineddata_model3 %>%
   tibble::column_to_rownames('plotID') %>%
   select(sort(names(.)))
 
-measured_by_matrix <- valid_plot_years %>%
-  left_join(airTemp_by_plot_year, by = c("plotID","year")) %>%
-  mutate(measuredBy = replace_na(measuredBy, 'not_detected')) %>%
-  pivot_wider(
-    names_from = year,
-    values_from = measuredBy
-  ) %>%
-  select(1, sort(names(.)[-1]))
-
-measured_by_matrix <- as.data.frame(measured_by_matrix)
-rownames(measured_by_matrix) <- measured_by_matrix$plotID
-measured_by_matrix <- measured_by_matrix[ , -1]
-  
 ```
 
-
+kmPerHourObservedWindSpeed
 ```{r}
-
-get_mode <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
-
-detection_method_all_detections <- brd_joineddata_model3 %>%
+kmPerHourObservedWindSpeed_surveys <- brd_joineddata_clean %>% #this needs to be from the whole dataset, since environmental variables are not dependent on bird detection
+  filter(siteID %in% large_sites) %>%
   group_by(plotID, year) %>%
-  summarise(detectionMethod = get_mode(detectionMethod), .groups = "drop")
-
-det_method_matrix <- valid_plot_years %>%
-  left_join(detection_method_all_detections, by = c("plotID","year")) %>%
-  mutate(detectionMethod = replace_na(detectionMethod, 'not_detected')) %>%
+  summarize(
+    kmPerHourObservedWindSpeed = na_if(mean(kmPerHourObservedWindSpeed, na.rm = TRUE), NaN),
+    .groups = "drop"
+  ) %>%
   pivot_wider(
     names_from = year,
-    values_from = detectionMethod
+    values_from = kmPerHourObservedWindSpeed
   ) %>%
-  select(1, sort(names(.)[-1]))
+  tibble::column_to_rownames('plotID') %>%
+  select(sort(names(.)))
 
-det_method_matrix <- as.data.frame(det_method_matrix)
-rownames(det_method_matrix) <- det_method_matrix$plotID
-det_method_matrix <- det_method_matrix[ , -1]
-
-#det_method_numeric <- det_method_matrix %>%
-#  mutate(across(everything(), ~ as.numeric(as.factor(.))))
 ```
 
-
-We use the same occupancy table as above, but we need to create a table with the survey covariates.
-
+cloudCover
 ```{r}
-surveycov <- data.frame(
-  measuredBy = as.vector(t(as.matrix(measured_by_matrix)))
+cloudCover_surveys <- brd_perpoint_clean %>% #this needs to be from the whole dataset, since environmental variables are not dependent on bird detection
+  filter(siteID %in% large_sites) %>%
+  group_by(plotID, year) %>%
+  summarize(
+    cloudCover = na_if(mean((startCloudCoverPercentage + endCloudCoverPercentage) / 2, na.rm = TRUE), NaN),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from  = year,
+    values_from = cloudCover
+  ) %>%
+  tibble::column_to_rownames('plotID') %>%
+  select(sort(names(.)))
+```
+
+relativeHumidity
+```{r}
+relativeHumidity_surveys <- brd_perpoint_clean %>% #this needs to be from the whole dataset, since environmental variables are not dependent on bird detection
+  filter(siteID %in% large_sites) %>%
+  group_by(plotID, year) %>%
+  summarize(
+    relativeHumidity = na_if(mean((startRH + endRH) / 2, na.rm = TRUE), NaN),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from  = year,
+    values_from = relativeHumidity
+  ) %>%
+  tibble::column_to_rownames('plotID') %>%
+  select(sort(names(.)))
+```
+
+Create survey Cov
+
+Note: this has all 4 in it but we do not have to use all 4 in the model or final tutorial
+```{r}
+# create the surveycov dataframe
+surveycov <-  data.frame(
+  observedAirTemp = unlist(observedAirTemp_surveys),
+  kmPerHourObservedWindSpeed = unlist(kmPerHourObservedWindSpeed_surveys),
+  cloudCover = unlist(cloudCover_surveys),
+  relativeHumidity = unlist(relativeHumidity_surveys)
   )
+
+# remove the rownames
 row.names(surveycov) <- NULL
+
+head(surveycov)
 ```
 
 
@@ -865,52 +885,46 @@ birds_pao_model3 <- createPao(
 ```
 
 #### Run the actual model
+There will be a warning since we are missing some env variable values where we have detection data (i guess for some reason they didn't record it sometimes)
 ```{r}
 birds_occupancy_model3 <- occMod(
   data = birds_pao_model3,           
-  model = list(psi ~ 1,  p ~ measuredBy),
+  model = list(psi ~ 1,  p ~ kmPerHourObservedWindSpeed),
   type = 'so'
   )
+
+summary(birds_occupancy_model3)
 ```
 
 #### Model Results
 
 ```{r}
-mod.list <-  list(
-    birds_occupancy_model1, 
-    birds_occupancy_model3
-)
-aictable <- createAicTable(mod.list = mod.list)
-aictable$table
+coef(birds_occupancy_model3, 'p', prob = 0.95)
 
 ```
-Looking at the two models, we can briefly look at the AIC values. The AIC for the model with elevation is lower (better), so the principle of parsimony suggests this is the better model: it is the more parsimonous model when considering both fit and number of parameters.
+Here, we can see that the beta estimate for kmPerHourObservedWindSpeed is slightly negative (i.e., as windspeed increases, detection for calling birds decreases) and 0 is not included in the confidence interval, so there is a statistically significant effect that windspeed affects detection
 
-```{r}
-results <- print_one_site_estimates(
-  mod = birds_occupancy_model3,
-  site = 1)
-```
+If the lowerCI and upperCI contain 0 you cannot conclude the effect is statistically significant
 
+Lets plot something
 ```{r}
 
-ggplot(data = data.frame(results), aes(x = rownames(results), y = est)) +
-  geom_bar(stat = 'identity') + 
-  geom_errorbar(aes(ymin = lower, ymax = upper, width = 0.2)) +
-  lims(y = c(0, 1)) +
-  labs(y = "Maximum likelihood estimate",
-       x = "Parameter")
-
-data <- data.frame(
-  measuredBy = birds_pao_model3$survcov$measuredBy
-  ) %>%
-  filter(!is.na(measuredBy), measuredBy != "not_detected")
-
-ggplot(data, aes(x = measuredBy)) + 
-  geom_bar(stat = 'count') +
-  labs(x = "Measured By", y = "Number of Surveys Conducted") +
-  theme(axis.text.x = element_text(angle = 90, margin = margin(t = 5)))
-
+newdata <- data.frame(
+  kmPerHourObservedWindSpeed = seq(from = min(unlist(kmPerHourObservedWindSpeed_surveys), na.rm = TRUE),
+             to = max(unlist(kmPerHourObservedWindSpeed_surveys), na.rm = TRUE),
+             by = 1)
+  )
+predictions <- predict(birds_occupancy_model3, newdata, 'p')
+predictions$kmPerHourObservedWindSpeed <- newdata$kmPerHourObservedWindSpeed
+  
+# plot the predictions with ggplot2
+ggplot(data = predictions, aes(x = kmPerHourObservedWindSpeed, y = est)) +
+ geom_line() +
+ geom_line(aes(x = kmPerHourObservedWindSpeed, y = lower_0.95), linetype = "dashed") +
+ geom_line(aes(x = kmPerHourObservedWindSpeed, y = upper_0.95), linetype = "dashed") +
+ labs(x = "kmPerHourObservedWindSpeed", 
+      y = "Predicted detection") +
+ lims(y = c(0, 1))
 ```
 
 ## Multi-season Occupancy Model

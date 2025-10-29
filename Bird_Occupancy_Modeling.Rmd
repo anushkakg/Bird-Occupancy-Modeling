@@ -748,7 +748,7 @@ By plot this time, not site since an entire site is not surveyed in a single sur
 
 ```{r}
 # Filter table by species
-bird_species <- "Melanerpes carolinus"
+bird_species <- "Setophaga virens"
 
 #unique(brd_joineddata_clean$detectionMethod)
 
@@ -930,3 +930,4 @@ ggplot(data = predictions, aes(x = kmPerHourObservedWindSpeed, y = est)) +
 ## Multi-season Occupancy Model
 
 # Predictive/Causal Hypotheses
+

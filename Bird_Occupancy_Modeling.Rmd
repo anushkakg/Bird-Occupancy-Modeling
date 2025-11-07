@@ -1017,10 +1017,10 @@ summary(birds_occupancy_model4)
 
 This shows that Melanerpes carolinus has an occupancy probability (psi) of % (i.e., if you go to any of these sites, there is a % chance of this bird occupying the site) and a detection probability (p) of % (i.e., if you visit a site and the bird occupies it, there is a % chance you will detect it)
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 ests <- as.data.frame(print_one_site_estimates(mod = birds_occupancy_model4))
 
-ests <- ests[1:2,] %>% 
+ests <- ests[1:4,] %>% 
   mutate(parm = c("psi", "p")) %>% 
   select(parm, est, se, lower_0.95, upper_0.95) %>% 
   rename(., 
@@ -1034,8 +1034,9 @@ ests <- ests[1:2,] %>%
   ) %>% 
   `rownames<-`(seq_len(nrow(ests[1:2,])))
 
-ests
 ```
+
+
 ```{r}
 ggplot(ests, aes(x = Parameter, y = Estimate)) +
   labs(x = "Parameter", y = "Estimate") +

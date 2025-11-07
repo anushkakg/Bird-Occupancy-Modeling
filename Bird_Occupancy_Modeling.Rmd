@@ -929,5 +929,121 @@ ggplot(data = predictions, aes(x = kmPerHourObservedWindSpeed, y = est)) +
 
 ## Multi-season Occupancy Model
 
+While the single-season occupancy model assumes that the sites are closed to 
+changes in occupancy state over the study, we may want to know how occupancy rates are changing over time. For this we use the multi-season occupancy model.
+
+### Single Species
+
+Melanerpes carolinus (Red-bellied Woodpecker) across all sites
+
+#### Data Munging
+
+##### Occupancy Table
+
+```{r}
+# Filter table by species
+bird_species <- "Melanerpes carolinus"
+brd_joineddata_model4 <- brd_joineddata_clean %>%
+  filter(siteID %in% small_sites) %>%
+  filter(scientificName == bird_species)
+
+brd_joineddata_model4$year_bout <- paste(brd_joineddata_model4$year, brd_joineddata_model4$boutNumber, sep = "_")
+
+head(brd_joineddata_model4)
+
+# Get all valid surveys years across sites (so we can fill in NAs)
+valid_site_years <- brd_perpoint_clean %>%
+  distinct(siteID, year, boutNumber)
+
+# Get detections — only species *actually observed at a site* (so we can fill in 0s)
+detections <- brd_joineddata_model4 %>%
+  group_by(siteID, year_bout) %>%
+  summarize(present = 1, .groups = "drop")
+
+
+# Get all valid surveys years across sites (so we can fill in NAs)
+valid_site_years <- brd_perpoint_clean %>%
+  filter(siteID %in% small_sites) %>%
+  distinct(siteID, year, boutNumber)
+
+valid_site_years$year_bout <- paste(valid_site_years$year, valid_site_years$boutNumber, sep = "_")
+valid_site_years_bout <- subset(valid_site_years, select = -c(year, boutNumber))
+
+
+# Get detections — only species *actually observed at a site* (so we can fill in 0s)
+detections <- brd_joineddata_model4 %>%
+  group_by(siteID, year_bout) %>%
+  summarize(present = 1, .groups = "drop")
+
+# Join and fill
+site_by_year <- valid_site_years_bout %>%
+  left_join(detections, by = c("siteID", "year_bout")) %>%
+  mutate(present = replace_na(present, 0)) %>%
+  
+  pivot_wider(
+    names_from = year_bout,
+    values_from = present
+  )
+
+
+head(site_by_year, n=10)
+```
+#### Create the Pao presence-absence object (Pao)
+```{r}
+birds_pao_model4 <- createPao(
+  data = site_by_year[, c("2018_1", "2018_2","2019_1","2019_2", "2020_1","2020_2", "2021_1","2021_2", "2022_1", "2022_2", "2023_1", "2023_2")],
+  nsurveyseason = c(2,2,2,2,2,2),
+  unitnames = site_by_year$siteID,
+  title = "Red-bellied Woodpecker"
+)
+```
+
+#### Run the actual model
+```{r}
+birds_occupancy_model4 <- occMod(
+  data = birds_pao_model4,           
+  model = list(
+    psi ~ 1,  
+    epsilon ~ 1,
+    gamma ~ 1,
+    p ~ 1),
+  type = 'do.1'
+)
+
+summary(birds_occupancy_model4)
+```
+
+#### Model Results
+
+This shows that Melanerpes carolinus has an occupancy probability (psi) of % (i.e., if you go to any of these sites, there is a % chance of this bird occupying the site) and a detection probability (p) of % (i.e., if you visit a site and the bird occupies it, there is a % chance you will detect it)
+
+```{r}
+ests <- as.data.frame(print_one_site_estimates(mod = birds_occupancy_model4))
+
+ests <- ests[1:2,] %>% 
+  mutate(parm = c("psi", "p")) %>% 
+  select(parm, est, se, lower_0.95, upper_0.95) %>% 
+  rename(., 
+    c(
+      Parameter = parm,
+      Estimate = est,
+      SE = se,
+      L95 = lower_0.95,
+      U95 = upper_0.95
+    )
+  ) %>% 
+  `rownames<-`(seq_len(nrow(ests[1:2,])))
+
+ests
+```
+```{r}
+ggplot(ests, aes(x = Parameter, y = Estimate)) +
+  labs(x = "Parameter", y = "Estimate") +
+  geom_bar(stat = 'identity') +
+  geom_errorbar(aes(ymin = L95, ymax = U95), width = 0.2) +
+  theme_bw()
+
+```
 # Predictive/Causal Hypotheses
+
 

@@ -929,4 +929,6 @@ ggplot(data = predictions, aes(x = kmPerHourObservedWindSpeed, y = est)) +
 
 ## Multi-season Occupancy Model
 
+Estimating site occupancy, colonization, and local extinction when a species is detected imperfectly.
+
 # Predictive/Causal Hypotheses

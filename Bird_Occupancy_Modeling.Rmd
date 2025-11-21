@@ -1,34 +1,57 @@
 ---
 title: "NEON Bird Occupancy Modeling"
-author: "Anushka Gupta"
-date: "`r Sys.Date()`"
+description:
+authors: "Anushka Gupta"
+dateCreated: "`r Sys.Date()`"
 output:
   html_document:
-    df_print: paged
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+  toc_depth: 3
+  number_sections: true
+  theme: lumen
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+<div id="ds-objectives" markdown="1">
 
-# Introduction
-## NEON Birds
+## Learning Objectives 
+After completing this tutorial you will be able to: 
+
+* Understand occupancy modeling and its uses.
+* Perform occupancy modeling using NEON breeding landbird data.
+
+## Things You’ll Need To Complete This Tutorial
+
+### R Programming Language
+You will need a current version of R to complete this tutorial. We also recommend 
+the RStudio IDE to work with R. 
+
+### Install R Packages
+* RPresence: `install.packages('RPresence',repo='https://www.mbr-pwrc.usgs.gov/mbrCRAN')`
+
+## Introduction
+### NEON Birds
 The U.S National Science Foundation's National Ecological Observatory Network is a continental-scale observation facility designed to collect long-term ecological data. 
 The data product being used contains the quality-controlled, native sampling resolution data from NEON's breeding landbird sampling. 
 
 Protocols: https://data.neonscience.org/documents/10179/1883155/NEON.DOC.014041vL/2a13bc2b-84db-e4e5-1d33-af8fac1f9e24
 Data Product: https://data.neonscience.org/data-products/DP1.10003.001
 
-
-## Occupancy Modeling
+### Occupancy Modeling
 Occupancy models are used to help estimate true occupancy of a species and can help account for imperfect detection of organisms in a study.
 
 Occupancy (psi) = the probability that a species occurs at a site.
 Detection (p) = the probability that a species is detected at a site, given occupancy
 
-# Setup
-## Importing libraries
-```{r}
+### Setup
+
+#### Importing libraries
+
+```{r, message=FALSE}
 library(neonUtilities) #package for downloading NEON data 
 library(RPresence) # library for doing occupancy modelling
 library(dplyr)
@@ -37,7 +60,7 @@ library(stringr)
 library(ggplot2) # library for visualization
 ```
 
-## Importing NEON Data
+#### Importing NEON Data
 ```{r}
 large_sites <- c(
   "BARR", "BART", "BONA", "CLBJ", "CPER", "DEJU", "DSNY", "GRSM",
@@ -75,121 +98,7 @@ if (file.exists("data/bird_counts.RData")) {
 }
 ```
 
-## Data Examination
-
-Describe how the data are set up (i.e., there are two tables, with what data in them?)
-
-CountData:
-```{r}
-# Time distribution (number of observations per year)
-bird.counts$brd_perpoint %>%
-  mutate(year = lubridate::year(startDate)) %>%
-  ggplot(aes(x = factor(year))) +
-  geom_bar(fill = "forestgreen") +
-  ylim(0, 4000) + 
-  labs(
-    title = "Distribution of Observations Over Time",
-    x = "Year",
-    y = "Number of Observations"
-  ) +
-  theme_minimal()
-
-# % missing for each column
-missing_pct <- sapply(bird.counts$brd_perpoint, function(x) {
-  round(sum(is.na(x)) / length(x) * 100, 2)
-})
-
-missing_df <- data.frame(
-  column = names(missing_pct),
-  missing_percent = missing_pct
-) %>%
-  filter(missing_percent > 0)  # show only columns with missing values
-
-ggplot(missing_df, aes(x = reorder(column, -missing_percent), y = missing_percent)) +
-  geom_bar(stat = "identity", fill = "forestgreen") +
-  labs(
-    title = "Percentage of Missing Data by Column",
-    x = "Column",
-    y = "Missing Data (%)"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# Distribution by site
-ggplot(bird.counts$brd_perpoint, aes(x = siteID)) +
-  geom_bar(fill = "forestgreen") +
-  labs(title = "Distribution of Observations by Site", x = "Site ID", y = "Count") +
-  theme(axis.text.x = element_text(angle = 90))
-
-# Species by site
-grouped_data <- bird.counts$brd_countdata %>%
-    group_by(siteID)
-  
-summarized_data <- grouped_data %>%
-    summarize(num_species = n_distinct(scientificName)) 
-    
-ggplot(summarized_data, aes(x = siteID, y = num_species)) +
-  geom_bar(stat = "identity", fill = "forestgreen") +
-  labs(title = "Number of Species Observed by Site", x = "Site ID", y = "Number of Species") +
-  theme(axis.text.x = element_text(angle = 90))
-
-```
-
-PerPoint
-```{r}
-# Time distribution (number of observations per year)
-bird.counts$brd_countdata %>%
-  mutate(year = lubridate::year(startDate)) %>%
-  ggplot(aes(x = factor(year))) +
-  geom_bar(fill = "steelblue") +
-  labs(
-    title = "Distribution of Observations Over Time",
-    x = "Year",
-    y = "Number of Observations"
-  ) +
-  theme_minimal()
-
-# % missing for each column
-missing_pct <- sapply(bird.counts$brd_countdata, function(x) {
-  round(sum(is.na(x)) / length(x) * 100, 2)
-})
-
-missing_df <- data.frame(
-  column = names(missing_pct),
-  missing_percent = missing_pct
-) %>%
-  filter(missing_percent > 0)
-
-ggplot(missing_df, aes(x = reorder(column, -missing_percent), y = missing_percent)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  labs(
-    title = "Percentage of Missing Data by Column",
-    x = "Column",
-    y = "Missing Data (%)"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# Observations by site
-ggplot(bird.counts$brd_countdata, aes(x = siteID)) +
-  geom_bar(fill = "steelblue") +
-  labs(title = "Distribution of Observations by Site", x = "Site ID", y = "Count") +
-  theme(axis.text.x = element_text(angle = 90))
-
-# Species by site
-grouped_data <- bird.counts$brd_countdata %>%
-    group_by(siteID)
-  
-summarized_data <- grouped_data %>%
-    summarize(num_species = n_distinct(scientificName)) 
-    
-ggplot(summarized_data, aes(x = siteID, y = num_species)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  labs(title = "Number of Species Observed by Site", x = "Site ID", y = "Number of Species") +
-  theme(axis.text.x = element_text(angle = 90))
-```
-
-## Data Preparation
+#### Data Preparation
 
 First, we need to do some generic data cleanup.
 
@@ -241,7 +150,6 @@ brd_perpoint_clean <- brd_perpoint_clean %>%
   filter(samplingImpractical == "OK")
 ```
 
-
 3. Since we're really only interested in species level data, we need to remove records that are not recorded to the species level or had no records for that pointSurvey minute (taxonRank will be NA)
 
 ```{r}
@@ -265,7 +173,6 @@ brd_perpoint_clean <- brd_perpoint_clean %>%
 
 brd_countdata_clean <- brd_countdata_clean %>%
   filter(!pointSurveyID %in% duplicate_pointSurveyID)
-
 ```
 
 Do the join
@@ -282,30 +189,20 @@ brd_joineddata_clean <- inner_join(
 brd_joineddata_clean <- brd_joineddata_clean %>%
   select(-matches("\\.perpoint$"))
 names(brd_joineddata_clean) <- gsub("\\.count$", "", names(brd_joineddata_clean))
-
 ```
 
-## Data Standardization
 
-Because there is inconsistent sampling across sites (i.e., some sites are larger than others and not all plots within a site were continuously sampled over time), in order to do analyses across sites, we need to make sure that the data are standardized with respect to amount of sampling time.
-
-Actually - a way to get around this might be to just add a detection covariate for time or number of surveys to account for this. 
-
-```{r}
-
-```
-
-# Descriptive Analyses
+## Descriptive Analyses
 
 Great, now that our data are cleaned and standardized, we can start doing some basic analyses. First, lets take a look at a single species within a site in terms of its detection and occupancy. 
 
-## Single-season Occupancy Model
+### Single-season Occupancy Model
 
-### Single Species
+#### Single Species
 
-Melanerpes carolinus (Red-bellied Woodpecker) across all sites
+We have chosen to look at Melanerpes carolinus (Red-bellied Woodpecker) across all sites
 
-#### Data Munging
+##### Data Munging
 
 ##### Occupancy Table
 
@@ -350,7 +247,9 @@ birds_pao_model1 <- createPao(
 ```{r}
 birds_occupancy_model1 <- occMod(
   data = birds_pao_model1,           
-  model = list(psi ~ 1,  p ~ 1),
+  model = list(
+    psi ~ 1,  
+    p ~ 1),
   type = 'so'
   )
 
@@ -393,14 +292,13 @@ ggplot(ests, aes(x = Parameter, y = Estimate)) +
   geom_bar(stat = 'identity') +
   geom_errorbar(aes(ymin = L95, ymax = U95), width = 0.2) +
   theme_bw()
-
 ```
 
 ### Across all Species
 
 #### Create a function
 todo: change the vars to be just in scope for the function
-```{r}
+```{r, message=FALSE}
 run_occ_for_species_list <- function(species_df, brd_joineddata_clean, brd_perpoint_clean, sites, years = c("2018", "2019", "2020", "2021", "2022", "2023")) {
   
   results <- list()
@@ -559,14 +457,12 @@ ggplot(p_df, aes(x = reorder(label, p_Estimate), y = p_Estimate)) +
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 ```
 Take a look at the data for any of the species - we probably aren't interested in species with a 1 for detection, 1 for occupancy (there likely aren't any species that have all 1s)
 
 Curious about species with higher occupancy but lower detection
 
 ```{r eval=FALSE, include=FALSE}
-
 #species with highest psi
 psi_df %>%
   arrange(desc(psi_Estimate)) %>%
@@ -596,7 +492,6 @@ View(brd_joineddata_clean %>%
 
 #look at the model results
 View(results_df$estimates$`Falco peregrinus`)
-
 ```
 
 
@@ -626,7 +521,7 @@ psi_range_species
 ```
 Blue Jays and Great Horned Owls have similar occupancies (.51 and .52) but wildly different detections (.91 and .23).
 
-## Adding Covariates
+### Adding Covariates
 Detectability and occupancy of a species can be influenced by many different random effects, such as:
 
 Survey characteristics:
@@ -641,18 +536,12 @@ Site characteristics: sites with heavy cover or dense forests may decrease detec
 
 We can include data about these characteristics in our model to either a) describe previously known variation and thereby improve the model fit or b) test to see whether occupancy/detection of a site is a function of a covariate.
 
-### Occupancy Covariates
+#### Occupancy Covariates
 These are covariates that influence occupancy of a species. Occupancy probability can only be influenced by site characteristics.
 
 For example, shorebird occupancy would benefit from data on the extent of tidal flats, seabirds distributions are often influenced by ocean depth, and in many regions elevation plays a critical role in determining site occupancy.
 
 Melanerpes carolinus (Red-bellied Woodpecker) across all sites
-
-Lets add elevation as a site covariate and see how it improves the model fit.
-
-#### Data Munging
-
-##### Occupancy Table
 
 ##### Covariants
 We use the same occupancy table as above, but we need to create a table with the site covariates (aka nlcdClass).
@@ -670,11 +559,7 @@ site_cov <- brd_perpoint_clean %>%
   select(siteID, elevation) %>%
   distinct(siteID, .keep_all = TRUE) %>%
   tibble::column_to_rownames("siteID")
-
-
 ```
-
-todo: Plot the elevation for each site.
 
 #### Create the Pao presence-absence object (Pao)
 ```{r}
@@ -704,7 +589,6 @@ mod.list <-  list(
 )
 aictable <- createAicTable(mod.list = mod.list)
 aictable$table
-
 ```
 Looking at the two models, we can briefly look at the AIC values. The AIC for the model with elevation is lower (better), so the principle of parsimony suggests this is the better model: it is the more parsimonous model when considering both fit and number of parameters.
 
@@ -721,7 +605,7 @@ pchisq(diff, df = 1, lower.tail = FALSE)
 A p value of 2.356024e-05 is low so we can confidently reject the null hypothesis.
 
 ```{r}
-coef(birds_occupancy_model2, param = 'psi', prob = 0.95)
+coef(birds_occupancy_model2, param = 'psi')
 
 data <- cbind(site_cov, birds_occupancy_model2$real$psi) %>% 
   distinct(.keep_all = TRUE) %>%
@@ -734,8 +618,8 @@ ggplot(data, aes(x = elevation, y = est)) +
   lims(y = c(0, 1))
 ```
 
-### Detection Covariates
-Can also be unique for each site as well as the survey
+#### Detection Covariates
+Covariates can also be unique for each site as well as each survey.
 
 It is important to recognize that detection probability can be influenced by either survey characteristics or site characteristics.
 
@@ -780,8 +664,8 @@ plot_by_year <- valid_plot_years %>%
   arrange(plotID)
 
 head(plot_by_year, n=10)
-```
 
+```
 
 ##### Covariants
 
@@ -853,6 +737,7 @@ relativeHumidity_surveys <- brd_perpoint_clean %>% #this needs to be from the wh
   ) %>%
   tibble::column_to_rownames('plotID') %>%
   select(sort(names(.)))
+
 ```
 
 Create survey Cov
@@ -871,6 +756,7 @@ surveycov <-  data.frame(
 row.names(surveycov) <- NULL
 
 head(surveycov)
+
 ```
 
 
@@ -899,7 +785,7 @@ summary(birds_occupancy_model3)
 #### Model Results
 
 ```{r}
-coef(birds_occupancy_model3, 'p', prob = 0.95)
+coef(birds_occupancy_model3, 'p')
 
 ```
 Here, we can see that the beta estimate for kmPerHourObservedWindSpeed is slightly negative (i.e., as windspeed increases, detection for calling birds decreases) and 0 is not included in the confidence interval, so there is a statistically significant effect that windspeed affects detection
@@ -908,7 +794,6 @@ Remember, these coefficients are on the (unbounded) logit scale. The standard er
 
 Lets plot something
 ```{r}
-
 newdata <- data.frame(
   kmPerHourObservedWindSpeed = seq(from = min(unlist(kmPerHourObservedWindSpeed_surveys), na.rm = TRUE),
              to = max(unlist(kmPerHourObservedWindSpeed_surveys), na.rm = TRUE),
@@ -927,12 +812,12 @@ ggplot(data = predictions, aes(x = kmPerHourObservedWindSpeed, y = est)) +
  lims(y = c(0, 1))
 ```
 
-## Multi-season Occupancy Model
+###  Multi-season Occupancy Model
 
 While the single-season occupancy model assumes that the sites are closed to 
 changes in occupancy state over the study, we may want to know how occupancy rates are changing over time. For this we use the multi-season occupancy model.
 
-### Single Species
+#### Single Species
 
 Melanerpes carolinus (Red-bellied Woodpecker) across all sites
 
@@ -988,6 +873,7 @@ site_by_year <- valid_site_years_bout %>%
 
 head(site_by_year, n=10)
 ```
+
 #### Create the Pao presence-absence object (Pao)
 ```{r}
 birds_pao_model4 <- createPao(
@@ -1017,23 +903,24 @@ summary(birds_occupancy_model4)
 
 This shows that Melanerpes carolinus has an occupancy probability (psi) of % (i.e., if you go to any of these sites, there is a % chance of this bird occupying the site) and a detection probability (p) of % (i.e., if you visit a site and the bird occupies it, there is a % chance you will detect it)
 
-```{r eval=FALSE, include=FALSE}
+```{r}
 ests <- as.data.frame(print_one_site_estimates(mod = birds_occupancy_model4))
 
 ests <- ests[1:4,] %>% 
-  mutate(parm = c("psi", "p")) %>% 
-  select(parm, est, se, lower_0.95, upper_0.95) %>% 
+  mutate(parm = c("psi", "gamma", "epsilon", "p")) %>% 
+  select(parm, est, se, lower, upper) %>% 
   rename(., 
     c(
       Parameter = parm,
       Estimate = est,
       SE = se,
-      L95 = lower_0.95,
-      U95 = upper_0.95
+      L95 = lower,
+      U95 = upper
     )
   ) %>% 
-  `rownames<-`(seq_len(nrow(ests[1:2,])))
+  `rownames<-`(seq_len(nrow(ests[1:4,])))
 
+coef(birds_occupancy_model4, param = 'psi')
 ```
 
 
@@ -1043,5 +930,6 @@ ggplot(ests, aes(x = Parameter, y = Estimate)) +
   geom_bar(stat = 'identity') +
   geom_errorbar(aes(ymin = L95, ymax = U95), width = 0.2) +
   theme_bw()
-
 ```
+
+## Predictive/Causal Hypotheses

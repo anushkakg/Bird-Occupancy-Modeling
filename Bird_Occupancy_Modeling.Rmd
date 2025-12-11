@@ -1,28 +1,31 @@
 ---
-title: "NEON Bird Occupancy Modeling"
-description:
-authors: "Anushka Gupta"
+syncID:
+title: "Estimating Bird Occupancy and Detection Using NEON Observational Data"
+description: "Use NEON breeding landbird data and the RPresence package to build single- and multi-season occupancy models, explore detection probabilities, and incorporate ecological and survey covariates."
 dateCreated: "`r Sys.Date()`"
-output:
-  html_document:
-    toc: true
-    toc_float: true
-    toc_collapsed: true
-  toc_depth: 3
-  number_sections: true
-  theme: lumen
+authors: Anushka Gupta
+contributors: Chandra Earl
+estimatedTime: 
+packagesLibraries: neonUtilities, RPresence, dplyr, tidyr, stringr, ggplot2
+topics:
+languageTool: R
+dataProduct: DP1.10003.001
+code1: 
+tutorialSeries:
+urlTitle:
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+This tutorial explores the use of NEON breeding landbird data for occupancy modeling. The focus is on preparing observational bird data, constructing detection histories, and fitting single- and multi-season occupancy models. Although birds are used here as the example, the same workflow can be applied to other organismal <a href="https://www.neonscience.org/data-collection/observational-sampling" target="_blank">NEON observational sampling datasets</a> that provide species-level detections. If you are interested in linking occupancy results with environmental predictors, the methods demonstrated here can also be extended to incorporate covariates from NEON data products that describe habitat structure or climate, such as those derived from <a href="https://www.neonscience.org/data-collection/automated-instruments" target="_blank">NEON's Automated Instrument Systems</a>.
+
 <div id="ds-objectives" markdown="1">
 
 ## Learning Objectives 
 After completing this tutorial you will be able to: 
 
-* Understand occupancy modeling and its uses.
-* Perform occupancy modeling using NEON breeding landbird data.
+* Understand the basics of occupancy modeling.
+* Prepare NEON breeding landbird data for occupancy analysis and build detection histories.
+* Fit occupancy models in R and interpret occupancy and detection estimates.
+* Incorporate site-level and survey-level covariates to evaluate factors influencing detection and occupancy.
 
 ## Things You’ll Need To Complete This Tutorial
 
@@ -30,38 +33,89 @@ After completing this tutorial you will be able to:
 You will need a current version of R to complete this tutorial. We also recommend 
 the RStudio IDE to work with R. 
 
-### Install R Packages
-* RPresence: `install.packages('RPresence',repo='https://www.mbr-pwrc.usgs.gov/mbrCRAN')`
+</div>
 
-## Introduction
-### NEON Birds
-The U.S National Science Foundation's National Ecological Observatory Network is a continental-scale observation facility designed to collect long-term ecological data. 
-The data product being used contains the quality-controlled, native sampling resolution data from NEON's breeding landbird sampling. 
+## Introduction to NEON Bird Observations
+NEON’s breeding landbird point count dataset provides taxonomic identifications, distances, and detection information for all birds observed during standardized six-minute surveys. The protocol focuses on diurnal, terrestrial breeding landbirds, a group chosen because they respond strongly to changes in climate, habitat, and land use, and because they interact with other NEON-monitored organisms.
 
-Protocols: https://data.neonscience.org/documents/10179/1883155/NEON.DOC.014041vL/2a13bc2b-84db-e4e5-1d33-af8fac1f9e24
-Data Product: https://data.neonscience.org/data-products/DP1.10003.001
+Field crews survey spatially distributed locations during the breeding season, recording every bird seen or heard. These repeated surveys across years and sites produce rich detection–nondetection data suited for occupancy modeling and for exploring how bird communities vary across environmental gradients.
 
-### Occupancy Modeling
-Occupancy models are used to help estimate true occupancy of a species and can help account for imperfect detection of organisms in a study.
+NEON’s terrestrial field **sites** are designated as *large* or *small*, which determines the sampling design. Large sites are surveyed once per year and contain 5–10 **plots** containing Bird Grids, each made up of a 3×3 array of nine **points** spaced 250 m apart (see Figure). Field crews visit every point in a grid and conduct a 6-minute **point-count survey**. Smaller sites, which cannot accommodate full grids, are surveyed twice per year and contain 2–25 point-count locations that are randomly distributed across the site and spaced at least 250 m apart.
 
-Occupancy (psi) = the probability that a species occurs at a site.
-Detection (p) = the probability that a species is detected at a site, given occupancy
+<div id="ds-dataTip" markdown="1">
+<i class="fa fa-star"></i> **Data Tip:** NEON’s bird data follow a hierarchical structure: DomainID → SiteID → PlotID → PointID. Large sites use points labeled 1–9, while small sites use point label 21 for all locations.
+For example: (Large Site) D07 → GRSM → GRSM_002 → 5 | (Small Site) D20 → PUUM → PUUM_001 → 21.
+</div> 
 
-### Setup
+<figure>
+	<a href="https://github.com/anushkakg/Bird-Occupancy-Modeling/tree/main/images/birdGrid.jpg">
+	<img src="https://github.com/anushkakg/Bird-Occupancy-Modeling/tree/main/images/birdGrid.jpg" alt="Design of the bird point count grid, consisting of 9 points separated by a minimum of 250 m."></a>
+	<figcaption> Design of a bird grid, consisting of 9 points separated by a minimum of 250 m. Source: National Ecological Observatory Network, CC-BY (NEON)  
+	</figcaption>
+</figure>
 
-#### Importing libraries
+More details on NEON’s bird monitoring program are available on the <a href="https://www.neonscience.org/data-collection/birds" target="_blank">NEON bird resource page</a>. Protocols referenced in the data can be found in the <a href="https://data.neonscience.org/documents" target="_blank">Document Library</a>.
 
-```{r, message=FALSE}
-library(neonUtilities) #package for downloading NEON data 
-library(RPresence) # library for doing occupancy modelling
+## Introduction to Occupancy Modeling
+When searching for a species, there are technically three possible outcomes:
+
+1. The species is present and you detect it,
+2. the species is present and you do not detect it, or
+3. the species is absent and therefore not detected.
+
+Traditional presence–absence data cannot distinguish missed detections from true absences, which introduces uncertainty. Occupancy modeling addresses this challenge by explicitly modeling two linked processes: the true **occupancy** of the species and the **probability** of detecting the species given that it is present.
+
+This framework estimates two key parameters:
+
+* the probability that a site is occupied by a species (ψ)
+* the probability of detecting the species during a survey, given that it is present (p). 
+
+To tease apart ψ and p, the model requires repeated surveys of the same site within a period when occupancy of a species is assumed not to change. NEON’s observational sampling design is ideal for this approach, because surveys include repeated, standardized visits to locations across years. 
+
+## Setup R Environment
+
+We'll need several R packages in this tutorial. Install the packages, if not already installed, and load the libraries for each. 
+
+```{r install, eval=FALSE}
+
+# run once to get the package, and re-run if you need to get updates
+install.packages("neonUtilities") # work with NEON data
+install.packages('RPresence',repo='https://www.mbr-pwrc.usgs.gov/mbrCRAN') # library for doing occupancy modelling
+install.packages("dplyr") # data manipulation
+install.packages("tidyr") # data reshaping and tidying
+install.packages("stringr") # string handling and text processing
+install.packages("ggplot2") # visualization and plotting
+
+```
+
+
+```{r libraries, message=FALSE, warning=FALSE, results="hide"}
+library(neonUtilities) 
+library(RPresence)
 library(dplyr)
 library(tidyr)
 library(stringr)
-library(ggplot2) # library for visualization
+library(ggplot2)
 ```
 
-#### Importing NEON Data
-```{r}
+## Importing NEON Data
+
+First, we’ll download the breeding landbird data product (<a href="https://data.neonscience.org/data-products/DP1.10003.001" target="_blank">DP1.10003.001</a>) for all NEON terrestrial field sites included in <a href="https://www.neonscience.org/data-samples/data-management/data-revisions-releases/release-2025" target="_blank">RELEASE-2025</a>. 
+
+* NEON (National Ecological Observatory Network). Breeding landbird point counts (DP1.10003.001), RELEASE-2025. <a href="https://doi.org/10.48443/3nka-yg96" target="_blank">https://doi.org/10.48443/3nka-yg96</a>. Dataset accessed in R via neonUtilities on <span id="access-date"></span>.
+
+<script>
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById("access-date").textContent =
+    new Date().toLocaleDateString(undefined, options);
+</script>
+
+On the first run, this code block will download the full dataset for all sites. Because the data product is large and spans multiple years-including years before some sites became operational-the initial download may take some time. A cached version of the dataset is saved locally, so on re-run, the code simply loads the local file instead of downloading the data again.
+
+A NEON token is used to download the original data for this workflow. Tokens are optional but recommended, as they allow authenticated access and help avoid API rate limits when downloading large datasets. For more information, see the <a href="https://www.neonscience.org/resources/learning-hub/tutorials/neon-api-tokens-tutorial" target="_blank">Using an API Token when Accessing NEON Data with neonUtilities tutorial</a> and the <a href="https://data.neonscience.org/data-api/rate-limiting/#api-tokens" target="_blank">NEON API token documentation</a>.
+
+```{r import}
+# Define NEON sites
 large_sites <- c(
   "BARR", "BART", "BONA", "CLBJ", "CPER", "DEJU", "DSNY", "GRSM",
   "GUAN", "HARV", "HEAL", "JERC", "JORN", "KONZ", "MLBS", "MOAB",
@@ -74,90 +128,97 @@ small_sites <- c(
 )
 sites <- c(large_sites, small_sites)
 
+# Set up directories
 if (!dir.exists("data")) {
   dir.create("data")
 }
-
 if (!dir.exists("outputs")) {
   dir.create("outputs")
 }
 
-if (file.exists("data/bird_counts.RData")) {
-  load("data/bird_counts.RData")
+# Path to cached dataset
+bird_counts_path <- file.path("data", "bird_counts.RData")
+
+# Load cached data if available; otherwise download and save
+if (file.exists(bird_counts_path)) {
+  load(bird_counts_path)
 } else {
+  bird.counts <- loadByProduct(
+    dpID    = "DP1.10003.001",
+    package = "basic",
+    release = "RELEASE-2025",
+    token   = Sys.getenv("NEON_TOKEN"),
+    site    = sites,
+    check.size = FALSE
+  )
   
-  
-  ###todo: add NEON token
-  bird.counts <- loadByProduct(dpID="DP1.10003.001",
-                               site=sites,
-                               startdate="2018-01",
-                               enddate="2023-12",
-                               check.size = F)
-  
-  save(bird.counts, file = "data/bird_counts.RData")
+  save(bird.counts, file = bird_counts_path)
 }
 ```
 
-#### Data Preparation
+## Preparing the Data
 
-First, we need to do some generic data cleanup.
+NEON provides separate tables for point-count survey metadata (`brd_perpoint`) and the bird counts themselves (`brd_countdata`).
 
-1. Create unique surveyID - we have to create a unique key first consisting of the site, plot, point, year and bout)
+Take a look at their structure (that is, what fields are included) and the data in them. We can see that `brd_perpoint` contains metadata fields describing the location, elevation, date and field-crew recorded weather conditions for each point-count survey. 
 
-```{r}
+```{r brd_perpoint}
+str(bird.counts$brd_perpoint)
+
+head(bird.counts$brd_perpoint, n=10)
+```
+
+`brd_countdata` contains data for the birds observed during each point-count survey, including identification, observation method, distance, and minutes where no birds were observed.
+
+```{r brd_countdata}
+str(bird.counts$brd_countdata)
+
+head(bird.counts$brd_countdata, n=10)
+```
+
+Before we can fit occupancy models, we need to clean the data a bit. This includes:
+
+* Creating a unique identifier for each point-count survey.
+* Filtering out incomplete point-count surveys.
+* Keeping only detections identified to the species level.
+* Removing duplicate point-count surveys.
+* Joining the two tables into a single dataset.
+
+### Create a unique point-count survey ID
+
+Each point-count survey needs a unique identifier so that we can match the detection data (brd_countdata) with the corresponding per-point metadata (brd_perpoint). We extract the survey year from eventID and then combine the plot, point, year, and bout into a single key called pointSurveyID for each of the tables. Note, because the siteID is already included in the plotID (e.g., BART_012), siteID is not included in the construction of `pointSurveyID`.
+
+```{r uniqueIdentifier}
 brd_perpoint_clean <- bird.counts$brd_perpoint %>%
   mutate(year = str_extract(eventID, "\\d{4}"))%>%
-  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_")) %>%
-  mutate(locationID = paste(plotID, "point", pointID, sep = "_")) %>%
-  mutate(timeID = paste(year, "bout", boutNumber, sep = "_"))
+  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_"))
 
 brd_countdata_clean <- bird.counts$brd_countdata %>%
   mutate(year = str_extract(eventID, "\\d{4}"))%>%
-  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_")) %>%
-  mutate(locationID = paste(plotID, "point", pointID, sep = "_")) %>%
-  mutate(timeID = paste(year, "bout", boutNumber, sep = "_"))
-
+  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_"))
 ```
 
-Various data issues.
+### Remove incomplete surveys
 
-A large site should have points 1-9 for each plot. If it doesn't, something is wrong. Remove the whole plot survey if missing a point survey
-
-Note: this isn't a huge deal for these analyses but this is a problem. Needs to be above any survey removal if using. 
-
-```{r eval=FALSE, include=FALSE}
-bad_pointSurveyID <- brd_perpoint_clean %>%
-  filter(pointID != "21") %>%
-  group_by(plotID, year, boutNumber) %>%
-  filter(n_distinct(pointID) != 9) %>%
-  arrange(plotID, year, boutNumber, pointID) %>%
-  pull(pointSurveyID)
-
-bad_pointSurveyID
-
-brd_perpoint_clean <- brd_perpoint_clean %>%
-  filter(!pointSurveyID %in% bad_pointSurveyID)
-
-brd_countdata_clean <- brd_countdata_clean %>%
-  filter(!pointSurveyID %in% bad_pointSurveyID)
-
-```
-
-2. Filter out surveys where they could not finish
+The `samplingImpractical` field flags point-count surveys that could not be completed (e.g., weather, access issues). For our purposes, we keep only surveys marked as "OK".
 
 ```{r}
 brd_perpoint_clean <- brd_perpoint_clean %>%
   filter(samplingImpractical == "OK")
 ```
 
-3. Since we're really only interested in species level data, we need to remove records that are not recorded to the species level or had no records for that pointSurvey minute (taxonRank will be NA)
+### Keep only species-level records
+
+For this workflow, we only focus on detections identified to the species level. Records that are not identified to species (or have `NA` in `taxonRank`) are dropped.
 
 ```{r}
 brd_countdata_clean <- brd_countdata_clean %>%
   filter(taxonRank == "species")
 ```
 
-Sometimes there are duplicate pointSurveyIDs and there shouldn't be - likely errors in data input.
+### Remove duplicate surveys
+
+Each `pointSurveyID` should correspond to a single point-count survey. Occasionally, duplicate IDs appear, likely due to data entry or processing issues. We identify any duplicated `pointSurveyID` values and remove those surveys from both tables.
 
 ```{r}
 duplicate_pointSurveyID <- brd_perpoint_clean %>%
@@ -165,9 +226,6 @@ duplicate_pointSurveyID <- brd_perpoint_clean %>%
   filter(n > 1) %>%
   pull(pointSurveyID)
 
-duplicate_pointSurveyID
-
-#remove both of the duplicate surveys from each table
 brd_perpoint_clean <- brd_perpoint_clean %>%
   filter(!pointSurveyID %in% duplicate_pointSurveyID)
 
@@ -175,7 +233,9 @@ brd_countdata_clean <- brd_countdata_clean %>%
   filter(!pointSurveyID %in% duplicate_pointSurveyID)
 ```
 
-Do the join
+### Join per-point and count tables
+
+Finally, we join the cleaned detection data (`brd_countdata_clean`) with the cleaned per-point metadata (`brd_perpoint_clean`) using `pointSurveyID` as the primary key. After the join, we drop duplicate columns and keep a single, combined dataset.
 
 ```{r}
 brd_joineddata_clean <- inner_join(
@@ -931,5 +991,3 @@ ggplot(ests, aes(x = Parameter, y = Estimate)) +
   geom_errorbar(aes(ymin = L95, ymax = U95), width = 0.2) +
   theme_bw()
 ```
-
-## Predictive/Causal Hypotheses

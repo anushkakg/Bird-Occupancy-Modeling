@@ -1,8 +1,7 @@
 ---
-syncID:
 title: "Estimating Bird Occupancy and Detection Using NEON Observational Data"
 description: "Use NEON breeding landbird data and the RPresence package to build single- and multi-season occupancy models, explore detection probabilities, and incorporate ecological and survey covariates."
-dateCreated: "`r Sys.Date()`"
+description:
 authors: Anushka Gupta
 contributors: Chandra Earl
 estimatedTime: 
@@ -15,8 +14,10 @@ tutorialSeries:
 urlTitle:
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 This tutorial explores the use of NEON breeding landbird data for occupancy modeling. The focus is on preparing observational bird data, constructing detection histories, and fitting single- and multi-season occupancy models. Although birds are used here as the example, the same workflow can be applied to other organismal <a href="https://www.neonscience.org/data-collection/observational-sampling" target="_blank">NEON observational sampling datasets</a> that provide species-level detections. If you are interested in linking occupancy results with environmental predictors, the methods demonstrated here can also be extended to incorporate covariates from NEON data products that describe habitat structure or climate, such as those derived from <a href="https://www.neonscience.org/data-collection/automated-instruments" target="_blank">NEON's Automated Instrument Systems</a>.
-
 <div id="ds-objectives" markdown="1">
 
 ## Learning Objectives 
@@ -57,6 +58,8 @@ For example: (Large Site) D07 → GRSM → GRSM_002 → 5 | (Small Site) D20 →
 
 More details on NEON’s bird monitoring program are available on the <a href="https://www.neonscience.org/data-collection/birds" target="_blank">NEON bird resource page</a>. Protocols referenced in the data can be found in the <a href="https://data.neonscience.org/documents" target="_blank">Document Library</a>.
 
+Because NEON surveys are standardized in duration, timing, and protocol, differences in detection among surveys can be reasonably attributed to biological and environmental variation rather than inconsistent sampling effort. This makes the dataset especially well suited for modeling detection probability explicitly.
+
 ## Introduction to Occupancy Modeling
 When searching for a species, there are technically three possible outcomes:
 
@@ -65,6 +68,7 @@ When searching for a species, there are technically three possible outcomes:
 3. the species is absent and therefore not detected.
 
 Traditional presence–absence data cannot distinguish missed detections from true absences, which introduces uncertainty. Occupancy modeling addresses this challenge by explicitly modeling two linked processes: the true **occupancy** of the species and the **probability** of detecting the species given that it is present.
+A key assumption of occupancy modeling is closure during the sampling period: the true occupancy state of a site does not change between repeated surveys used to estimate detection probability. In practice, this means we assume no colonization or local extinction occurs within a season (single-season models), or within each primary period (multi-season models).
 
 This framework estimates two key parameters:
 
@@ -89,34 +93,39 @@ install.packages("ggplot2") # visualization and plotting
 
 ```
 
+### Occupancy Modeling
+NEON’s terrestrial field **sites** are designated as *large* or *small*, which determines the sampling design. Large sites are surveyed once per year and contain 5–10 **plots** containing Bird Grids, each made up of a 3×3 array of nine **points** spaced 250 m apart (see Figure). Field crews visit every point in a grid and conduct a 6-minute **point-count survey**. Smaller sites, which cannot accommodate full grids, are surveyed twice per year and contain 2–25 point-count locations that are randomly distributed across the site and spaced at least 250 m apart.
 
-```{r libraries, message=FALSE, warning=FALSE, results="hide"}
-library(neonUtilities) 
-library(RPresence)
+<div id="ds-dataTip" markdown="1">
+<i class="fa fa-star"></i> **Data Tip:** NEON’s bird data follow a hierarchical structure: DomainID → SiteID → PlotID → PointID. Large sites use points labeled 1–9, while small sites use point label 21 for all locations.
+For example: (Large Site) D07 → GRSM → GRSM_002 → 5 | (Small Site) D20 → PUUM → PUUM_001 → 21.
+</div> 
+
+A problem when studying wildlife populations is that it is impossible for wildlife species to be detected 100% of the time they are present. Therefore presence/absence data is inevitably distorted by detectability and a documented absence could mean:
+1. The species is present, and we did not detect it
+2. The species is not present, and we did not detect it
+
+Occupancy models can solve this by estimating detectability of a species using data from repeated observations at each site. 
+
+
+### Setup
+
+#### Importing libraries
+
+```{r, message=FALSE}
+library(neonUtilities) #package for downloading NEON data 
+library(RPresence) # library for doing occupancy modelling
 library(dplyr)
 library(tidyr)
 library(stringr)
-library(ggplot2)
+library(ggplot2) # library for visualization
 ```
 
-## Importing NEON Data
+#### Importing NEON Data
+The method common sampling method is point counts, which involves an observer standing at a point for a predetermined amount of time, typically during the peak of singing activity, and recording all of the individuals seen or heard. 
 
-First, we’ll download the breeding landbird data product (<a href="https://data.neonscience.org/data-products/DP1.10003.001" target="_blank">DP1.10003.001</a>) for all NEON terrestrial field sites included in <a href="https://www.neonscience.org/data-samples/data-management/data-revisions-releases/release-2025" target="_blank">RELEASE-2025</a>. 
-
-* NEON (National Ecological Observatory Network). Breeding landbird point counts (DP1.10003.001), RELEASE-2025. <a href="https://doi.org/10.48443/3nka-yg96" target="_blank">https://doi.org/10.48443/3nka-yg96</a>. Dataset accessed in R via neonUtilities on <span id="access-date"></span>.
-
-<script>
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  document.getElementById("access-date").textContent =
-    new Date().toLocaleDateString(undefined, options);
-</script>
-
-On the first run, this code block will download the full dataset for all sites. Because the data product is large and spans multiple years-including years before some sites became operational-the initial download may take some time. A cached version of the dataset is saved locally, so on re-run, the code simply loads the local file instead of downloading the data again.
-
-A NEON token is used to download the original data for this workflow. Tokens are optional but recommended, as they allow authenticated access and help avoid API rate limits when downloading large datasets. For more information, see the <a href="https://www.neonscience.org/resources/learning-hub/tutorials/neon-api-tokens-tutorial" target="_blank">Using an API Token when Accessing NEON Data with neonUtilities tutorial</a> and the <a href="https://data.neonscience.org/data-api/rate-limiting/#api-tokens" target="_blank">NEON API token documentation</a>.
-
-```{r import}
-# Define NEON sites
+Most NEON sites have 5-10 Bird Grids and sampling occurs once or twice per breeding season at each point at a site, depending on the size of the site. Large sites are sampled one per season, while small sites (ones that cannot accommodate the minimum of five 9-point grids) are sampled twice. We will separate large and small sites to account for this. 
+```{r}
 large_sites <- c(
   "BARR", "BART", "BONA", "CLBJ", "CPER", "DEJU", "DSNY", "GRSM",
   "GUAN", "HARV", "HEAL", "JERC", "JORN", "KONZ", "MLBS", "MOAB",
@@ -129,97 +138,88 @@ small_sites <- c(
 )
 sites <- c(large_sites, small_sites)
 
-# Set up directories
 if (!dir.exists("data")) {
   dir.create("data")
 }
+
 if (!dir.exists("outputs")) {
   dir.create("outputs")
 }
 
-# Path to cached dataset
-bird_counts_path <- file.path("data", "bird_counts.RData")
-
-# Load cached data if available; otherwise download and save
-if (file.exists(bird_counts_path)) {
-  load(bird_counts_path)
+if (file.exists("data/bird_counts.RData")) {
+  load("data/bird_counts.RData")
 } else {
-  bird.counts <- loadByProduct(
-    dpID    = "DP1.10003.001",
-    package = "basic",
-    release = "RELEASE-2025",
-    token   = Sys.getenv("NEON_TOKEN"),
-    site    = sites,
-    check.size = FALSE
-  )
   
-  save(bird.counts, file = bird_counts_path)
+  
+  ###todo: add NEON token
+  bird.counts <- loadByProduct(dpID="DP1.10003.001",
+                               site=sites,
+                               startdate="2018-01",
+                               enddate="2023-12",
+                               check.size = F)
+  
+  save(bird.counts, file = "data/bird_counts.RData")
 }
 ```
 
-## Preparing the Data
+#### Data Preparation
+Occupancy modeling requires detection–nondetection data organized as repeated surveys at fixed locations. Raw NEON bird data are stored in a long format with one row per observation, so our primary task is to (1) uniquely identify surveys, (2) ensure surveys are comparable across space and time, and (3) reshape the data into detection histories suitable for modeling.
 
-NEON provides separate tables for point-count survey metadata (`brd_perpoint`) and the bird counts themselves (`brd_countdata`).
+1. Create unique surveyID - we have to create a unique key first consisting of the site, plot, point, year and bout)
 
-Take a look at their structure (that is, what fields are included) and the data in them. We can see that `brd_perpoint` contains metadata fields describing the location, elevation, date and field-crew recorded weather conditions for each point-count survey. 
+NEON’s breeding landbird point count dataset contains two data packages that are important to us: 
+* brd_countdata: Point Count Data containing the actual observations (e.g., number of birds, species, distance from observer)
+* brd_perpoint: Per point metadata about the survey location and conditions
 
-```{r brd_perpoint}
-str(bird.counts$brd_perpoint)
-
-head(bird.counts$brd_perpoint, n=10)
-```
-
-`brd_countdata` contains data for the birds observed during each point-count survey, including identification, observation method, distance, and minutes where no birds were observed.
-
-```{r brd_countdata}
-str(bird.counts$brd_countdata)
-
-head(bird.counts$brd_countdata, n=10)
-```
-
-Before we can fit occupancy models, we need to clean the data a bit. This includes:
-
-* Creating a unique identifier for each point-count survey.
-* Filtering out incomplete point-count surveys.
-* Keeping only detections identified to the species level.
-* Removing duplicate point-count surveys.
-* Joining the two tables into a single dataset.
-
-### Create a unique point-count survey ID
-
-Each point-count survey needs a unique identifier so that we can match the detection data (brd_countdata) with the corresponding per-point metadata (brd_perpoint). We extract the survey year from eventID and then combine the plot, point, year, and bout into a single key called pointSurveyID for each of the tables. Note, because the siteID is already included in the plotID (e.g., BART_012), siteID is not included in the construction of `pointSurveyID`.
-
-```{r uniqueIdentifier}
-brd_perpoint_clean <- bird.counts$brd_perpoint %>%
-  mutate(year = str_extract(eventID, "\\d{4}"))%>%
-  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_"))
-
+```{r}
 brd_countdata_clean <- bird.counts$brd_countdata %>%
   mutate(year = str_extract(eventID, "\\d{4}"))%>%
-  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_"))
+  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_")) %>%
+  mutate(locationID = paste(plotID, "point", pointID, sep = "_")) %>%
+  mutate(timeID = paste(year, "bout", boutNumber, sep = "_"))
+
+brd_perpoint_clean <- bird.counts$brd_perpoint %>%
+  mutate(year = str_extract(eventID, "\\d{4}"))%>%
+  mutate(pointSurveyID = paste(plotID, "point", pointID, year, "bout", boutNumber, sep = "_")) %>%
+  mutate(locationID = paste(plotID, "point", pointID, sep = "_")) %>%
+  mutate(timeID = paste(year, "bout", boutNumber, sep = "_"))
 ```
 
-### Remove incomplete surveys
+For large sites, a complete plot survey must include all nine point-count locations. Missing one or more points indicates that the survey was not completed as designed, which could bias detection probabilities. Rather than attempting to partially correct these surveys, we remove them entirely to preserve consistency.
 
-The `samplingImpractical` field flags point-count surveys that could not be completed (e.g., weather, access issues). For our purposes, we keep only surveys marked as "OK".
+```{r eval=FALSE, include=FALSE}
+bad_pointSurveyID <- brd_perpoint_clean %>%
+  filter(pointID != "21") %>%
+  group_by(plotID, year, boutNumber) %>%
+  filter(n_distinct(pointID) != 9) %>%
+  arrange(plotID, year, boutNumber, pointID) %>%
+  pull(pointSurveyID)
+
+bad_pointSurveyID
+
+brd_perpoint_clean <- brd_perpoint_clean %>%
+  filter(!pointSurveyID %in% bad_pointSurveyID)
+
+brd_countdata_clean <- brd_countdata_clean %>%
+  filter(!pointSurveyID %in% bad_pointSurveyID)
+
+```
+
+2. Filter out surveys where they could not complete sampling.
 
 ```{r}
 brd_perpoint_clean <- brd_perpoint_clean %>%
   filter(samplingImpractical == "OK")
 ```
 
-### Keep only species-level records
-
-For this workflow, we only focus on detections identified to the species level. Records that are not identified to species (or have `NA` in `taxonRank`) are dropped.
+3. Since we're only interested in species level data, we need to remove records that are not recorded to the species level or had no records for that pointSurvey minute (taxonRank will be NA)
 
 ```{r}
 brd_countdata_clean <- brd_countdata_clean %>%
   filter(taxonRank == "species")
 ```
 
-### Remove duplicate surveys
-
-Each `pointSurveyID` should correspond to a single point-count survey. Occasionally, duplicate IDs appear, likely due to data entry or processing issues. We identify any duplicated `pointSurveyID` values and remove those surveys from both tables.
+Sometimes there are duplicate pointSurveyIDs and there shouldn't be - this is likely due to errors in data input, so we will remove those as well. 
 
 ```{r}
 duplicate_pointSurveyID <- brd_perpoint_clean %>%
@@ -227,6 +227,9 @@ duplicate_pointSurveyID <- brd_perpoint_clean %>%
   filter(n > 1) %>%
   pull(pointSurveyID)
 
+duplicate_pointSurveyID
+
+#remove both of the duplicate surveys from each table
 brd_perpoint_clean <- brd_perpoint_clean %>%
   filter(!pointSurveyID %in% duplicate_pointSurveyID)
 
@@ -234,9 +237,7 @@ brd_countdata_clean <- brd_countdata_clean %>%
   filter(!pointSurveyID %in% duplicate_pointSurveyID)
 ```
 
-### Join per-point and count tables
-
-Finally, we join the cleaned detection data (`brd_countdata_clean`) with the cleaned per-point metadata (`brd_perpoint_clean`) using `pointSurveyID` as the primary key. After the join, we drop duplicate columns and keep a single, combined dataset.
+Now we will join the the point count data and the per point metadata so we have one table with all the information we need. At this stage, each row represents a species observation during a specific point-count survey, with associated environmental and survey metadata. 
 
 ```{r}
 brd_joineddata_clean <- inner_join(
@@ -252,20 +253,27 @@ brd_joineddata_clean <- brd_joineddata_clean %>%
 names(brd_joineddata_clean) <- gsub("\\.count$", "", names(brd_joineddata_clean))
 ```
 
-
 ## Descriptive Analyses
 
-Great, now that our data are cleaned and standardized, we can start doing some basic analyses. First, lets take a look at a single species within a site in terms of its detection and occupancy. 
+Now that our data are cleaned and standardized, we can start doing some basic analyses. 
+Occupancy models can be classified into single-season or multi-season analysis. 
 
 ### Single-season Occupancy Model
+We begin with a single-season occupancy model, which assumes that occupancy does not change within the sampling window. This approach is appropriate when repeated surveys occur within a relatively short time frame, such as a single breeding season. 
 
 #### Single Species
 
-We have chosen to look at Melanerpes carolinus (Red-bellied Woodpecker) across all sites
+Single species occupancy modeling monitors a target species at N sites, where the target is present at some of them. We use Melanerpes carolinus (Red-bellied Woodpecker) as an example because it is widespread, frequently detected, and occurs across many NEON sites. These characteristics make it well suited for demonstrating occupancy modeling without complications arising from sparse detections.
 
 ##### Data Munging
 
 ##### Occupancy Table
+For occupancy modeling, we are we are interested in two things. 
+1. Is the target present at a site? 
+2. For targets that are present, is the target detected by an observer? 
+The data we have pertaines to the latter, the detection of a target species across surveys. Here, we will formulate our data into a table representing the encounter history of a species where 1 represents the detection of the target. Under the assumption that occupancy patterns are fixed between the surveys, we can use this history to understand the presence or absence of the target. 
+
+First, we will construct an occupancy table where rows represent distinct survey sites and columns represent repeated visits. In occupancy modeling, we do not model counts directly. Instead, we model whether a species was detected (1) or not detected (0) during each survey. Multiple detections within a survey are collapsed into a single detection event.
 
 ```{r}
 # Filter table by species
@@ -296,6 +304,8 @@ head(site_by_year, n=10)
 ```
 
 #### Create the Pao presence-absence object (Pao)
+Using our detection history, we can create an R object of class “pao” (presence-absence object), which is the basic input for analysis in RPresence. The createPao() function converts the detection history matrix into a format recognized by RPresence. Each row corresponds to a site, and each column corresponds to a repeated survey. Missing values (NA) indicate that a site was not surveyed during a given year, while zeros indicate non-detections during completed surveys. For more information, consult the function's help page.
+
 ```{r}
 birds_pao_model1 <- createPao(
   data = site_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023")],
@@ -305,6 +315,17 @@ birds_pao_model1 <- createPao(
 ```
 
 #### Run the actual model
+Using our “pao” object, we can now run the single season occupancy analysis using the RPresence function occMod(). 
+The arguments to the occMod() function are: 
+- model: a list of formula for each parameter, where p = detection probability and psi = occupancy
+- data: pao data object
+- type: a string indicating the type of occupancy model to fit
+
+We need a formula for psi and for p. Because we do not have an independent variable and the detection probability is assumed constant across surveys, we will use psi ~ 1 and p ~ 1. 
+
+We are conducting a single season analysis, so we will use "so," short for “static occupancy”
+for the "type" argument. The alternative would be "dynamic occupancy" or multi-season. In this initial model, we assume both occupancy (ψ) and detection probability (p) are constant across all sites and surveys. While this is biologically simplistic, it provides a baseline model against which more complex models can be compared.
+
 ```{r}
 birds_occupancy_model1 <- occMod(
   data = birds_pao_model1,           
@@ -316,17 +337,15 @@ birds_occupancy_model1 <- occMod(
 
 summary(birds_occupancy_model1)
 ```
+The output shows us the AIC and the -2 log-likelihood value. The AIC (Akaike Information Criterion) measures the likelihood of each model to have generated the observed data, with a lower value being preferable. 
+
+It also shows -2*log-likelihood, which measured the goodness of fit and is used to calculate the AIC. 
 
 #### Model Results
 
-This shows that Melanerpes carolinus has an occupancy probability (psi) of 45% (i.e., if you go to any of these sites, there is a 45% chance of this bird occupying the site) and a detection probability (p) of 91% (i.e., if you visit a site and the bird occupies it, there is a 91% chance you will detect it)
+Examining our results further, we see that Melanerpes carolinus has an occupancy probability (psi) of 45% (i.e., if you go to any of these sites, there is a 45% chance of this bird occupying the site) and a detection probability (p) of 91% (i.e., if you visit a site and the bird occupies it, there is a 91% chance you will detect it)
 
 ```{r}
-#print_one_site_estimates(mod = birds_occupancy_model1, site = 1)
-
-#fitted(object = birds_occupancy_model1, param = 'psi', prob = 0.95)
-#fitted(object = birds_occupancy_model1, param = 'p', prob = 0.95)
-
 ests <- as.data.frame(print_one_site_estimates(mod = birds_occupancy_model1))
 
 ests <- ests[1:2,] %>% 
@@ -346,7 +365,6 @@ ests <- ests[1:2,] %>%
 ests
 ```
 
-
 ```{r}
 ggplot(ests, aes(x = Parameter, y = Estimate)) +
   labs(x = "Parameter", y = "Estimate") +
@@ -358,7 +376,8 @@ ggplot(ests, aes(x = Parameter, y = Estimate)) +
 ### Across all Species
 
 #### Create a function
-todo: change the vars to be just in scope for the function
+Now that we have demonstrated a simple occupancy model, we can write a function that applies to all species in our data. Extending this analysis across all species allows us to compare occupancy and detection patterns community-wide.
+
 ```{r, message=FALSE}
 run_occ_for_species_list <- function(species_df, brd_joineddata_clean, brd_perpoint_clean, sites, years = c("2018", "2019", "2020", "2021", "2022", "2023")) {
   
@@ -385,7 +404,7 @@ run_occ_for_species_list <- function(species_df, brd_joineddata_clean, brd_perpo
       summarize(present = 1, .groups = "drop")
     
     # Build site-year detection matrix
-    site_by_year <- valid_site_years %>%
+    current_site_by_year <- valid_site_years %>%
       left_join(detections, by = c("siteID", "year")) %>%
       mutate(present = replace_na(present, 0)) %>%
       pivot_wider(
@@ -438,7 +457,7 @@ run_occ_for_species_list <- function(species_df, brd_joineddata_clean, brd_perpo
 }
 ```
 
-Run the function across all species
+We will now run the function for all species. 
 
 ```{r warning=FALSE}
 species_input <- brd_joineddata_clean %>%
@@ -454,6 +473,8 @@ results_df <- run_occ_for_species_list(
 ```
 
 #### Results
+Using the function defined above, we fit single-season occupancy models for all bird species observed in the dataset. For each species, we estimated occupancy probability and detection probability.
+
 
 Plot psi (occupancy)
 
@@ -519,9 +540,8 @@ ggplot(p_df, aes(x = reorder(label, p_Estimate), y = p_Estimate)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-Take a look at the data for any of the species - we probably aren't interested in species with a 1 for detection, 1 for occupancy (there likely aren't any species that have all 1s)
 
-Curious about species with higher occupancy but lower detection
+Species with a 1 for occupancy and a 1 for detection are often less informative. These boundary estimates often occur when a species is detected in every survey where it occurs, providing little information to estimate imperfect detection. 
 
 ```{r eval=FALSE, include=FALSE}
 #species with highest psi
@@ -555,8 +575,7 @@ View(brd_joineddata_clean %>%
 View(results_df$estimates$`Falco peregrinus`)
 ```
 
-
-For a given occupancy range, get species and related detections. It will be interesting to see the range. 
+To explore how detection probability varies among species with similar occupancy, we subset species within a narrow range of ψ values and compare their detection estimates.
 
 ```{r}
 estimates_df <- bind_rows(lapply(names(results_df$estimates), function(name) {
@@ -580,9 +599,10 @@ psi_range_species <- estimates_df %>%
 
 psi_range_species
 ```
-Blue Jays and Great Horned Owls have similar occupancies (.51 and .52) but wildly different detections (.91 and .23).
+In this example, Blue Jays and Great Horned Owls have similar occupancy probabilities (.51 and .52), yet their detection probabilities differ dramatically (.91 and .23). Blue Jays are highly detectable during point-count surveys, whereas Great Horned Owls are much more difficult to detect under the same protocol.
 
 ### Adding Covariates
+
 Detectability and occupancy of a species can be influenced by many different random effects, such as:
 
 Survey characteristics:
@@ -663,6 +683,7 @@ diff <- abs(birds_occupancy_model1$neg2loglike - birds_occupancy_model2$neg2logl
 pchisq(diff, df = 1, lower.tail = FALSE)
 
 ```
+
 A p value of 2.356024e-05 is low so we can confidently reject the null hypothesis.
 
 ```{r}
@@ -680,16 +701,14 @@ ggplot(data, aes(x = elevation, y = est)) +
 ```
 
 #### Detection Covariates
-Covariates can also be unique for each site as well as each survey.
+Detection probability can vary not only due to observer skill but also due to environmental conditions that affect animal behavior or survey conditions. For vocal birds, wind speed, temperature, and humidity can strongly influence calling behavior and sound transmission.
 
-It is important to recognize that detection probability can be influenced by either survey characteristics or site characteristics.
-
-We are going to see whether temperature of the survey affects the detection of calling Red-bellied Woodpeckers.
+It is important to recognize that detection probability can be influenced by either survey characteristics or site characteristics. We are going to see whether temperature of the survey affects the detection of calling Red-bellied Woodpeckers.
 
 #### Data Munging
 
 ##### Occupancy Table
-By plot this time, not site since an entire site is not surveyed in a single survey, only a plot is
+We will once more construct an occupancy table, but instead of rows representing sites, we will use plots. This is because a single survey only covers a plot, not an entire site.
 
 ```{r}
 # Filter table by species
@@ -702,12 +721,12 @@ brd_joineddata_model3 <- brd_joineddata_clean %>%
   filter(scientificName == bird_species) %>%
   filter(detectionMethod %in% c("singing", "calling", "other aural (e.g. wing beats)", "drumming", "calling and singing", "other aural and singing"))
 
-# Get all valid surveys years across sites (so we can fill in NAs)
+# Get all valid surveys years across plots (so we can fill in NAs)
 valid_plot_years <- brd_perpoint_clean %>%
   filter(siteID %in% large_sites) %>%
   distinct(plotID, year)
   
-# Get detections — only species *actually observed at a site* (so we can fill in 0s)
+# Get detections — only species *actually observed at a plot* (so we can fill in 0s)
 detections <- brd_joineddata_model3 %>%
   filter(siteID %in% large_sites) %>%
   group_by(plotID, year) %>%
@@ -729,8 +748,17 @@ head(plot_by_year, n=10)
 ```
 
 ##### Covariants
+NEON bird surveys record environmental conditions at the start and end of each point-count survey. Because multiple point counts occur within a plot and year, we summarize these variables by taking the mean value across all point-count surveys conducted within each plot–year combination.
 
-observedAirTemp
+Below, we construct several candidate detection covariates commonly hypothesized to influence detectability of landbirds:
+* Observed air temperature
+* Wind speed
+* Cloud cover
+* Relative humidity
+
+Each covariate is organized as a matrix with rows corresponding to plots and columns corresponding to survey years, matching the structure required by RPresence
+
+Observed air temperature (°C)
 ```{r}
 observedAirTemp_surveys <- brd_joineddata_clean %>% #this needs to be from the whole dataset, since environmental variables are not dependent on bird detection
   filter(siteID %in% large_sites) %>%
@@ -748,7 +776,7 @@ observedAirTemp_surveys <- brd_joineddata_clean %>% #this needs to be from the w
 
 ```
 
-kmPerHourObservedWindSpeed
+Wind speed (km/hour)
 ```{r}
 kmPerHourObservedWindSpeed_surveys <- brd_joineddata_clean %>% #this needs to be from the whole dataset, since environmental variables are not dependent on bird detection
   filter(siteID %in% large_sites) %>%
@@ -766,7 +794,7 @@ kmPerHourObservedWindSpeed_surveys <- brd_joineddata_clean %>% #this needs to be
 
 ```
 
-cloudCover
+Cloud cover percentage
 ```{r}
 cloudCover_surveys <- brd_perpoint_clean %>% #this needs to be from the whole dataset, since environmental variables are not dependent on bird detection
   filter(siteID %in% large_sites) %>%
@@ -783,7 +811,7 @@ cloudCover_surveys <- brd_perpoint_clean %>% #this needs to be from the whole da
   select(sort(names(.)))
 ```
 
-relativeHumidity
+Relative humidity (%RH)
 ```{r}
 relativeHumidity_surveys <- brd_perpoint_clean %>% #this needs to be from the whole dataset, since environmental variables are not dependent on bird detection
   filter(siteID %in% large_sites) %>%
@@ -801,9 +829,8 @@ relativeHumidity_surveys <- brd_perpoint_clean %>% #this needs to be from the wh
 
 ```
 
-Create survey Cov
+We combine all candidate detection covariates into a single survey-level covariate table. Individual models then specify which covariates are used to explain detection probability, allowing straightforward comparison among alternative detection hypotheses.
 
-Note: this has all 4 in it but we do not have to use all 4 in the model or final tutorial
 ```{r}
 # create the surveycov dataframe
 surveycov <-  data.frame(
@@ -819,7 +846,6 @@ row.names(surveycov) <- NULL
 head(surveycov)
 
 ```
-
 
 #### Create the Pao presence-absence object (Pao)
 ```{r}
@@ -847,13 +873,12 @@ summary(birds_occupancy_model3)
 
 ```{r}
 coef(birds_occupancy_model3, 'p')
-
 ```
 Here, we can see that the beta estimate for kmPerHourObservedWindSpeed is slightly negative (i.e., as windspeed increases, detection for calling birds decreases) and 0 is not included in the confidence interval, so there is a statistically significant effect that windspeed affects detection
 
 Remember, these coefficients are on the (unbounded) logit scale. The standard error is provided for each estimate, as are the 95% confidence intervals. The confidence intervals can be computed by hand as the estimate +/- 1.96 times the standard error. If the confidence interval encompasses 0, traditionally we say the estimate is “not statistically significant”. If the beta could reasonably be 0, it means the variable has no effect (or at least we don’t have evidence of its effect in the dataset).
 
-Lets plot something
+Let's plot the effect of wind speed on detection:
 ```{r}
 newdata <- data.frame(
   kmPerHourObservedWindSpeed = seq(from = min(unlist(kmPerHourObservedWindSpeed_surveys), na.rm = TRUE),
@@ -875,16 +900,22 @@ ggplot(data = predictions, aes(x = kmPerHourObservedWindSpeed, y = est)) +
 
 ###  Multi-season Occupancy Model
 
-While the single-season occupancy model assumes that the sites are closed to 
-changes in occupancy state over the study, we may want to know how occupancy rates are changing over time. For this we use the multi-season occupancy model.
+While the single-season occupancy model assumes that the sites are closed to changes in occupancy state over the study, we may want to know how occupancy rates are changing over time. For this we use the multi-season occupancy model. Sampling is divided into primary and secondary periods, between which previously occupied sites can go locally extinct, and previously unoccupied sites can be colonized. 
+
+Sampling is divided into:
+* Primary periods (e.g., years), between which occupancy status may change
+* Secondary periods (e.g., repeated surveys within a year), during which occupancy is assumed to be constant
+
+This structure allows us to estimate not only occupancy and detection, but also colonization and local extinction probabilities. The dynamic occupancy model provides estimates for four key parameters: initial occupancy (ψ), colonization (γ), local extinction (ε), and detection probability (p).
 
 #### Single Species
 
-Melanerpes carolinus (Red-bellied Woodpecker) across all sites
+We will now examine Melanerpes carolinus (Red-bellied Woodpecker) across all sites, now using a multi-season model.
 
 #### Data Munging
 
 ##### Occupancy Table
+For the multi-season model, each year is treated as a primary season, and the two survey bouts within each year serve as secondary surveys. Detection histories are therefore organized as site × (year × bout) matrices.
 
 ```{r}
 # Filter table by species
@@ -936,6 +967,8 @@ head(site_by_year, n=10)
 ```
 
 #### Create the Pao presence-absence object (Pao)
+When creating the PAO object, we specify the number of secondary surveys per primary season using the nsurveyseason argument. In this case, each year contains two surveys.
+
 ```{r}
 birds_pao_model4 <- createPao(
   data = site_by_year[, c("2018_1", "2018_2","2019_1","2019_2", "2020_1","2020_2", "2021_1","2021_2", "2022_1", "2022_2", "2023_1", "2023_2")],
@@ -946,6 +979,8 @@ birds_pao_model4 <- createPao(
 ```
 
 #### Run the actual model
+We fit a dynamic occupancy model in which all parameters are assumed to be constant across sites and years:
+
 ```{r}
 birds_occupancy_model4 <- occMod(
   data = birds_pao_model4,           
@@ -959,10 +994,10 @@ birds_occupancy_model4 <- occMod(
 
 summary(birds_occupancy_model4)
 ```
+This model provides a baseline description of occupancy dynamics, against which more complex models could be compared.
 
 #### Model Results
-
-This shows that Melanerpes carolinus has an occupancy probability (psi) of % (i.e., if you go to any of these sites, there is a % chance of this bird occupying the site) and a detection probability (p) of % (i.e., if you visit a site and the bird occupies it, there is a % chance you will detect it)
+initial occupancy probability (ψ) 47% (i.e., if you go to any of these sites, there is a 47% chance of this bird occupying the site), a colonization probability (γ): 55% (i.e. previously unoccupied sites had a 55% chance of being colonized the next year), a local extinction (ε) probability of 53% (e.i. occupied sites had a 53% chance of going extinct by the next year), and a detection probability (p) of 47% (i.e., if you visit a site and the bird occupies it, there is a 47% chance you will detect it)
 
 ```{r}
 ests <- as.data.frame(print_one_site_estimates(mod = birds_occupancy_model4))
@@ -984,7 +1019,6 @@ ests <- ests[1:4,] %>%
 coef(birds_occupancy_model4, param = 'psi')
 ```
 
-
 ```{r}
 ggplot(ests, aes(x = Parameter, y = Estimate)) +
   labs(x = "Parameter", y = "Estimate") +
@@ -992,4 +1026,3 @@ ggplot(ests, aes(x = Parameter, y = Estimate)) +
   geom_errorbar(aes(ymin = L95, ymax = U95), width = 0.2) +
   theme_bw()
 ```
-

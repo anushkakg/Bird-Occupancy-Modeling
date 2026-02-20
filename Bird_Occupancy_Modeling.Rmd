@@ -107,7 +107,6 @@ A problem when studying wildlife populations is that it is impossible for wildli
 
 Occupancy models can solve this by estimating detectability of a species using data from repeated observations at each site. 
 
-
 ### Setup
 
 #### Importing libraries
@@ -155,7 +154,7 @@ if (file.exists("data/bird_counts.RData")) {
   bird.counts <- loadByProduct(dpID="DP1.10003.001",
                                site=sites,
                                startdate="2018-01",
-                               enddate="2023-12",
+                               enddate="2024-12",
                                check.size = F)
   
   save(bird.counts, file = "data/bird_counts.RData")
@@ -254,7 +253,6 @@ names(brd_joineddata_clean) <- gsub("\\.count$", "", names(brd_joineddata_clean)
 ```
 
 
-
 ### Single-season Occupancy Model
 We begin with a single-season occupancy model, which assumes that occupancy does not change within the sampling window. This approach is appropriate when repeated surveys occur within a relatively short time frame, such as a single breeding season. 
 
@@ -303,7 +301,7 @@ Using our detection history, we can create an R object of class “pao” (prese
 
 ```{r}
 birds_pao_model1 <- createPao(
-  data = site_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023")],
+  data = site_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023", "2024")],
   unitnames = site_by_year$siteID,
   title = "Red-bellied Woodpecker"
 )
@@ -393,14 +391,14 @@ site_by_year_owl <- valid_site_years %>%
     values_from = present
   )
 
-birds_pao_model_owl <- createPao(
-  data = site_by_year_owl[, c("2018", "2019", "2020", "2021", "2022", "2023")],
+owl_pao_model <- createPao(
+  data = site_by_year_owl[, c("2018", "2019", "2020", "2021", "2022", "2023", "2024")],
   unitnames = site_by_year_owl$siteID,
   title = "Great Horned Owl"
 )
 
-birds_occupancy_model_owl <- occMod(
-  data = birds_pao_model_owl,           
+owl_occupancy_model <- occMod(
+  data = owl_pao_model,           
   model = list(
     psi ~ 1,  
     p ~ 1),
@@ -432,7 +430,7 @@ site_by_year_jay <- valid_site_years %>%
   )
 
 birds_pao_model_jay <- createPao(
-  data = site_by_year_jay[, c("2018", "2019", "2020", "2021", "2022", "2023")],
+  data = site_by_year_jay[, c("2018", "2019", "2020", "2021", "2022", "2023", "2024")],
   unitnames = site_by_year_jay$siteID,
   title = "Blue Jay"
 )
@@ -536,7 +534,7 @@ site_cov <- brd_perpoint_clean %>%
 #### Create the Pao presence-absence object (Pao)
 ```{r}
 birds_pao_model2 <- createPao(
-  data = site_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023")],
+  data = site_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023", "2024")],
   unitnames = site_by_year$siteID,
   unitcov = site_cov,
   title = "Red-bellied Woodpecker"
@@ -741,7 +739,7 @@ head(surveycov)
 #### Create the Pao presence-absence object (Pao)
 ```{r}
 birds_pao_model3 <- createPao(
-  data = plot_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023")],
+  data = plot_by_year[, c("2018", "2019", "2020", "2021", "2022", "2023", "2024")],
   unitnames = plot_by_year$plotID,
   survcov = surveycov,
   title = "Red-Bellied Woodpecker"
@@ -789,6 +787,4 @@ ggplot(data = predictions, aes(x = kmPerHourObservedWindSpeed, y = est)) +
  lims(y = c(0, 1))
 ```
 
-
 Going forward, we may want to know how occupancy rates are changing over time. For this we can use the multi-season occupancy model, which allows us to estimate not only occupancy and detection, but also colonization and local extinction probabilities. 
-

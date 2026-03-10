@@ -1,6 +1,6 @@
 ---
 title: "Estimating Bird Occupancy and Detection Using NEON Observational Data"
-description: "Use NEON breeding landbird data and the RPresence package to build detection histories, fit occupancy models, and incorporate ecological and survey covariates."
+description: "Use NEON breeding landbird data and the RPresence package to build detection histories, fit occupancy models, and incorporate environmental and survey covariates."
 authors: Anushka Gupta
 contributors: Chandra Earl
 estimatedTime: 
@@ -16,7 +16,7 @@ urlTitle:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-This tutorial explores the use of NEON breeding landbird data for occupancy modeling. The focus is on building detection histories from observational data, fitting a simple occupancy model, and testing how environmental conditions may influence occupancy and detection.
+This tutorial explores the use of NEON breeding landbird data for occupancy modeling. The focus is on building detection histories from observational data, fitting a simple occupancy model, and testing how environmental and survey conditions may influence occupancy and detection.
 
 Although birds are used here, the same workflow could be applied to other <a href="https://www.neonscience.org/data-collection/observation-types" target="_blank">observational sampling datasets</a> that provide species-level detections, such as <a href="https://www.neonscience.org/data-collection/small-mammals" target="_blank">small mammals</a> or <a href="https://www.neonscience.org/data-collection/fish" target="_blank">fish</a>. Environmental covariates for these models can also be drawn from other NEON data products, such as weather and climate measurements collected by <a href="https://www.neonscience.org/data-collection/automated-instruments" target="_blank">NEON's Automated Instrument Systems</a>.
 <div id="ds-objectives" markdown="1">
@@ -38,11 +38,11 @@ the RStudio IDE to work with R.
 </div>
 
 ## Introduction to NEON Bird Observations
-NEON’s breeding landbird point count dataset provides taxonomic identifications, detection methods, and associated survey and site information for birds observed during standardized six-minute surveys. The protocol focuses on diurnal, terrestrial breeding landbirds, a group chosen because they respond strongly to changes in climate, habitat, and land use, and because they interact with other NEON-monitored organisms.
+NEON’s breeding landbird point count dataset provides taxonomic identifications, detection methods, and associated survey and site information for birds observed during standardized six-minute surveys. The protocol focuses on diurnal, terrestrial breeding landbirds, a group chosen because they respond strongly to changes in climate, habitat, and land use.
 
-Field crews survey spatially distributed plots across NEON <a href="https://www.neonscience.org/field-sites" target="_blank">field sites</a> during the breeding season, recording every bird seen or heard. These repeated surveys across years and sites produce rich detection–nondetection data suited for occupancy modeling and for exploring how bird communities vary across environmental gradients.
+Field crews survey spatially distributed plots across NEON <a href="https://www.neonscience.org/field-sites" target="_blank">field sites</a> during the breeding season every year, recording every bird seen or heard. These repeated surveys produce rich detection–nondetection data suited for occupancy modeling.
 
-NEON’s terrestrial field **sites** are designated as *large* or *small*, which determines the sampling design. Large sites are surveyed once per year and contain 5–10 **plots** each containing a bird grid, made up of a 3×3 array of nine **points** spaced 250 m apart (see Figure 1). Field crews visit every point in a grid and conduct a 6-minute **point-count survey**. Smaller sites, which cannot accommodate full grids within plots, contain 2–25 point-count locations randomly distributed across the site and spaced at least 250 m apart. These are surveyed twice per year.
+NEON’s terrestrial field **sites** are designated as *large* or *small*, which determines the sampling design. Large sites are surveyed once per year and contain 5–10 **plots** each containing a bird grid, made up of a 3×3 array of nine **points** spaced 250 m apart (see Figure 1). Field crews visit every point in a grid and conduct a 6-minute **point-count survey**. Smaller sites, which cannot accommodate full grids, contain 2–25 point-count locations randomly distributed across the site and spaced at least 250 m apart. These are surveyed twice per year.
 
 <div id="ds-dataTip" markdown="1">
 <i class="fa fa-star"></i> **Data Tip:** NEON’s bird data follow a hierarchical structure: DomainID → SiteID → PlotID → PointID. Large sites use points labeled 1–9, while small sites use point label 21 for all locations.
@@ -65,15 +65,15 @@ When searching for a species, there are technically three possible outcomes:
 2. the species is present and you do not detect it, or
 3. the species is absent and therefore not detected.
 
-Traditional presence–absence data cannot distinguish missed detections from true absences, which introduces uncertainty. Occupancy modeling addresses this challenge by explicitly modeling two linked processes: the true **occupancy** of the species and the **probability** of detecting the species given that it is present.
-A key assumption of occupancy modeling is closure during the sampling period: the true occupancy state of a site does not change between repeated surveys used to estimate detection probability. In practice, this means we assume no colonization or local extinction occurs within a season (single-season models), or within each primary period (multi-season models).
+Traditional presence–absence data cannot distinguish missed detections from true absences. Occupancy modeling addresses this challenge by explicitly modeling two linked processes: the true **occupancy** of the species and the probability of **detecting** the species given that it is present.
+A key assumption of occupancy modeling is closure during the sampling period: the true occupancy state of a site does not change between repeated surveys.
 
 This framework estimates two key parameters:
 
 * the probability that a site is occupied by a species, i.e., occupancy (ψ)
 * the probability of detecting the species during a survey, given that it is present, i.e., detection (p). 
 
-To tease apart ψ and p, occupancy models require repeated surveys of the same site within a period when occupancy of a species is assumed not to change. NEON’s observational sampling design is ideal for this approach, because surveys include repeated, standardized visits to locations across time.
+To tease apart ψ and p, occupancy models require repeated surveys of the same site. NEON’s observational sampling design is ideal for this approach, because surveys include repeated, standardized visits to locations across time.
 
 ## Setup R Environment
 
@@ -162,7 +162,7 @@ if (file.exists(bird_counts_path)) {
 ## Preparing the Data
 NEON provides separate tables for point-count survey metadata (`brd_perpoint`) and the bird counts themselves (`brd_countdata`).
 
-Take a look at their structure (that is, what fields are included) and the data in them. We can see that `brd_perpoint` contains metadata fields describing the location, elevation, date and field-crew recorded weather conditions for each point-count survey. 
+Take a look at their structure (that is, what fields are included) and the data in them. We see that `brd_perpoint` contains fields describing the location, elevation, date and field-crew recorded weather conditions for each point-count survey. 
 
 ```{r brd_perpoint}
 str(bird.counts$brd_perpoint)
@@ -170,7 +170,7 @@ str(bird.counts$brd_perpoint)
 head(bird.counts$brd_perpoint, n=10)
 ```
 
-`brd_countdata` contains data for the birds observed during each point-count survey, including identification, observation method, distance, and minutes where no birds were observed.
+`brd_countdata` contains data for the birds observed during each point-count survey, including identification, observation method, distance, and observed minute.
 
 ```{r brd_countdata}
 str(bird.counts$brd_countdata)
@@ -189,7 +189,7 @@ Before we can build detection histories and fit an occupancy model, we need to c
 
 ### Create a unique point-count survey ID
 
-Each point-count survey needs a unique identifier so that we can match each point-count survey record (brd_perpoint) to its corresponding bird data (brd_countdata). We extract the survey year from eventID and then combine the plot, point, year, and bout into a single key called pointSurveyID for each of the tables. Note, because the siteID is already included in the plotID (e.g., BART_012), siteID is not included in the construction of `pointSurveyID`.
+Each point-count survey needs a unique identifier so that we can match each point-count survey record (brd_perpoint) to its corresponding bird data (brd_countdata). We extract the survey year from eventID and then combine the site, plot, point, year, and bout into a single key called pointSurveyID for each of the tables. Note, because the siteID is already included in the plotID (e.g., BART_012), siteID is not actually included in the construction of `pointSurveyID`.
 
 ```{r}
 brd_perpoint_clean <- bird.counts$brd_perpoint %>%
@@ -212,7 +212,7 @@ brd_perpoint_clean <- brd_perpoint_clean %>%
 
 ### Remove surveys prior to 2017
 
-Bird surveys were not conducted consistently at all sites in the early years of the NEON program. To ensure a consistent survey effort across sites and years, we remove surveys conducted before 2017.
+Point-count surveys were not conducted consistently at all sites in the early years of the NEON program. To ensure a consistent survey effort across sites and years, we remove surveys conducted before 2017.
 
 ```{r}
 brd_perpoint_clean <- brd_perpoint_clean %>%
@@ -268,14 +268,14 @@ head(brd_joineddata_clean, n=10)
 
 ## Building the Detection History
 
-Occupancy models require **detection histories**, which record whether a species was detected during repeated surveys. For single-species occupancy models, detection histories are typically represented as a table of 0s and 1s, where:
+Occupancy models require **detection histories**, which record whether a species was detected or not. For single-species occupancy models, detection histories are typically represented as a table of 0s and 1s, where:
 
 * Each row represents a sampling location
 * Each column represents a survey (time).
 
 A value of 1 indicates the species was detected during that survey, while 0 indicates it was not detected.
 
-The way detection histories are constructed depends on the research question. For NEON observational data, locations could be defined at the plot or site level, depending on the scale of the analysis. Survey could also be defined in different ways. For example, individual surveys could be aggregated within a year, month, or other time period, as long as survey effort between and within each aggregated survey is consistent.
+The way detection histories are constructed depends on the research question. For NEON observational data, locations could be defined at the plot or site level, depending on the scale of the analysis. Survey could also be defined in different ways. For example, individual surveys could be aggregated within a year, month, or other time period.
 
 In this tutorial, we construct detection histories at the site level and define survey occasions by year (i.e., each cell in our table will correspond to a **site-year** combination)
 
@@ -316,7 +316,7 @@ detections <- brd_single_species %>%
 
 ### Create the detection history table
 
-Finally, we will combine the tables and reshape the data. Any site–year combinations without a detection are filled with 0, indicating the species was not detected. The data are then reshaped so that each row represents a site and each column represents a year, as explained above.
+Finally, we will combine the tables and reshape the data. Any site–year combinations without a detection are filled with 0, indicating the species was not detected. The data are then reshaped so that each row represents a site and each column represents a year, as explained above. We also sort the table alphabetically by siteID and chronologically by year. 
 
 ```{r}
 # Join and fill
@@ -348,9 +348,9 @@ The basic input for nearly every occupancy analysis in RPresence is an object of
 
 A `pao` object is created using the `createPao()` function. At a minimum, this function requires a detection history containing the detection (=1) and non-detection (=0) data with observations from a sampling unit along a row, and surveys in the columns. Missing values are allowed (=NA).
 
-Additional arguments allow users to include site-level covariates, survey-level covariates, or multi-season information, but we will not include those in this initial model.
+Additional arguments allow users to include site-level or survey-level covariates but we will not include those in this initial model.
 
-In this example, we provide three arguments:
+In this example, we provide two arguments:
 
 * data – the detection history (0/1 data)
 * unitnames – a label for each sampling unit (here, NEON sites)
@@ -358,7 +358,7 @@ In this example, we provide three arguments:
 ```{r}
 birds_pao_simple <- createPao(
   data = detection_history[, -1], # detection/nondetection data (survey columns only) from detection_history
-  unitnames = detection_history$siteID # site IDs from detection_history
+  unitnames = detection_history$siteID # siteIDs from detection_history
 )
 ```
 
@@ -560,21 +560,24 @@ Here we can see that although Blue Jays and Great Horned Owls have similar occup
 
 In reality, occupancy and detection probabilities are rarely constant across all sites and surveys. Many factors can influence whether a species occurs at a site and whether it is detected during a survey. These factors can be included in occupancy models as covariates.
 
-Site characteristics can influence occupancy **or** detection. For example:
+**Site** characteristics can influence occupancy **or** detection. For example:
 
 * Vegetation density – dense vegetation may make birds harder to detect than in more open habitats.
 * Habitat type – some species only occupy sites with suitable habitat, such as forests, wetlands, or grasslands.
 
-Survey characteristics can **only** affect detection. For example:
+**Survey** characteristics can **only** affect detection. For example:
 
 * Observer differences – some observers may be better at detecting or identifying certain species.
 * Weather conditions – rain, wind, or poor visibility can make birds harder to hear or see.
 
-By including these variables in our model, we can either **account for known sources of variation to improve model fit** or **test whether occupancy or detection is a function of a particular covariate**.
+By including these variables in our model, we can either:
+
+* **Account for known sources of variation to improve model fit** or 
+* **Test whether occupancy or detection is dependent on a particular covariate**.
 
 ### Site Covariates
 
-So far, our model assumed that occupancy and detection probabilities were constant across all sites. In reality, site characteristics often influence whether a species occupies a location or is more easily detected. We can test these effects by including site covariates in the occupancy model. Remember that site characteristics can influence occupancy **or** detection.
+So far, our model assumed that occupancy and detection probabilities were constant across all sites and surveys. In reality, site characteristics often influence whether a species occupies a location or is more easily detected. We can test these effects by including site covariates in the occupancy model. Remember that site characteristics can influence both occupancy and/or detection.
 
 In this example, we examine whether **elevation** influences the occupancy probability of *Melanerpes carolinus* (Red-bellied Woodpecker).
 
@@ -674,9 +677,9 @@ Looking at the two models, the model including elevation has a lower AIC value (
 
 ##### Likelihood Ratio Test
 
-We can also calculate a p-value using a likelihood ratio test (LRT) to quantify whether the model including elevation provides a significantly better fit than the simpler model without it. This method is only appropriate for “nested” models only, meaning the simpler model is a special case of the more complex one. In this case, the simple model (`psi ~ 1`) is a reduced version of the model that includes elevation (`psi ~ elevation`).
+We can also calculate a p-value using a likelihood ratio test (LRT) to quantify whether the model including elevation provides a significantly better fit than the simpler model without it. This method is appropriate for “nested” models only, meaning the simpler model is a special case of the more complex one. In this case, the simple model (`psi ~ 1`) is a reduced version of the model that includes elevation (`psi ~ elevation`).
 
-The likelihood ratio test compares how well the two models explain the data by examining the difference in their −2 log-likelihood values. If the model with the additional parameter (elevation) fits the data substantially better, the difference in −2 log-likelihood values will be large. The difference in −2 log-likelihood values is compared to a chi-square distribution, where the degrees of freedom equal the difference in the number of parameters between the two models.
+The likelihood ratio test compares how well the two models explain the data by examining the difference in their −2 log-likelihood values. The difference in −2 log-likelihood values is compared to a chi-square distribution, where the degrees of freedom equals the difference in the number of parameters between the two models.
  
 
 ```{r}
@@ -728,7 +731,7 @@ In addition to site characteristics, the conditions under which a survey is cond
 
 Unlike site covariates, survey covariate can **only** influence detection probability, not whether a species occupies a site.
 
-In this example, we examine whether survey effort influences the detection probability of *Melanerpes carolinus*. Survey effort here is defined as the total number of minutes spent conducting bird point-count surveys at a site within a year. Although each survey lasts six minutes, the number of surveys conducted can vary among site–year combinations due to differences in sampling design (e.g., large vs. small sites) and the number of plots sampled at each site. Greater survey effort may provide more opportunities to detect a species if it is present.
+In this example, we examine whether survey effort influences the detection probability of *Melanerpes carolinus*. Survey effort here is defined as the total number of minutes spent conducting bird point-count surveys at a site within a year. Although each survey lasts six minutes, the number of surveys conducted can vary among site–year combinations due to differences in sampling design (e.g., large vs. small sites) and the number of plots sampled at each site. Greater survey effort could provide more opportunities to detect a species if it is present.
 
 #### Create a survey covariate table
 
@@ -867,4 +870,4 @@ ggplot(data, aes(x = survey_effort, y = est)) +
 
 In this tutorial, we demonstrated how NEON breeding landbird data can be used to build detection histories and fit a single-species, single-season occupancy model. We estimated occupancy and detection probabilities, incorporated both site-level and survey-level covariates and examined ways to test model performance.
 
-While this tutorial focused on a relatively simple model, occupancy modeling can be extended in several ways. For example, **multi-season occupancy models** allow occupancy probability to change over time (whereas we assumed it was constant here), enabling researchers to estimate local colonization and extinction rates and their predictors for a species. **Multi-species occupancy models** can also be used to analyze patterns across entire communities at a location, allowing researchers to examine how species traits influence occupancy and detection probabilities.
+While this tutorial focused on a relatively simple, but powerful, model, occupancy modeling can be extended in several ways. For example, **multi-season occupancy models** allow occupancy probability to change over time (we assumed it was constant here), enabling researchers to estimate local colonization and extinction rates and their predictors for a species. **Multi-species occupancy models** can also be used to analyze patterns across entire communities at a location, allowing researchers to examine how species traits influence occupancy and detection probabilities.

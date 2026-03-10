@@ -357,7 +357,7 @@ Using NEON Observational Data</h1>
 <p>This tutorial explores the use of NEON breeding landbird data for
 occupancy modeling. The focus is on building detection histories from
 observational data, fitting a simple occupancy model, and testing how
-environmental conditions may influence occupancy and detection.</p>
+site and survey conditions may influence occupancy and detection.</p>
 Although birds are used here, the same workflow could be applied to
 other
 <a href="https://www.neonscience.org/data-collection/observation-types" target="_blank">observational
@@ -399,14 +399,12 @@ identifications, detection methods, and associated survey and site
 information for birds observed during standardized six-minute surveys.
 The protocol focuses on diurnal, terrestrial breeding landbirds, a group
 chosen because they respond strongly to changes in climate, habitat, and
-land use, and because they interact with other NEON-monitored
-organisms.</p>
+land use.</p>
 <p>Field crews survey spatially distributed plots across NEON
 <a href="https://www.neonscience.org/field-sites" target="_blank">field
-sites</a> during the breeding season, recording every bird seen or
-heard. These repeated surveys across years and sites produce rich
-detection–nondetection data suited for occupancy modeling and for
-exploring how bird communities vary across environmental gradients.</p>
+sites</a> during the breeding season every year, recording every bird
+seen or heard. These repeated surveys produce rich
+detection–nondetection data suited for occupancy modeling.</p>
 <p>NEON’s terrestrial field <strong>sites</strong> are designated as
 <em>large</em> or <em>small</em>, which determines the sampling design.
 Large sites are surveyed once per year and contain 5–10
@@ -414,9 +412,9 @@ Large sites are surveyed once per year and contain 5–10
 array of nine <strong>points</strong> spaced 250 m apart (see Figure 1).
 Field crews visit every point in a grid and conduct a 6-minute
 <strong>point-count survey</strong>. Smaller sites, which cannot
-accommodate full grids within plots, contain 2–25 point-count locations
-randomly distributed across the site and spaced at least 250 m apart.
-These are surveyed twice per year.</p>
+accommodate full grids, contain 2–25 point-count locations randomly
+distributed across the site and spaced at least 250 m apart. These are
+surveyed twice per year.</p>
 <div id="ds-dataTip" markdown="1">
 <p><i class="fa fa-star"></i> <strong>Data Tip:</strong> NEON’s bird
 data follow a hierarchical structure: DomainID → SiteID → PlotID →
@@ -451,16 +449,13 @@ outcomes:</p>
 <li>the species is absent and therefore not detected.</li>
 </ol>
 <p>Traditional presence–absence data cannot distinguish missed
-detections from true absences, which introduces uncertainty. Occupancy
-modeling addresses this challenge by explicitly modeling two linked
-processes: the true <strong>occupancy</strong> of the species and the
-<strong>probability</strong> of detecting the species given that it is
-present. A key assumption of occupancy modeling is closure during the
-sampling period: the true occupancy state of a site does not change
-between repeated surveys used to estimate detection probability. In
-practice, this means we assume no colonization or local extinction
-occurs within a season (single-season models), or within each primary
-period (multi-season models).</p>
+detections from true absences. Occupancy modeling addresses this
+challenge by explicitly modeling two linked processes: the true
+<strong>occupancy</strong> of the species and the probability of
+<strong>detecting</strong> the species given that it is present. A key
+assumption of occupancy modeling is closure during the sampling period:
+the true occupancy state of a site does not change between repeated
+surveys.</p>
 <p>This framework estimates two key parameters:</p>
 <ul>
 <li>the probability that a site is occupied by a species, i.e.,
@@ -469,8 +464,7 @@ occupancy (ψ)</li>
 it is present, i.e., detection (p).</li>
 </ul>
 <p>To tease apart ψ and p, occupancy models require repeated surveys of
-the same site within a period when occupancy of a species is assumed not
-to change. NEON’s observational sampling design is ideal for this
+the same site. NEON’s observational sampling design is ideal for this
 approach, because surveys include repeated, standardized visits to
 locations across time.</p>
 </div>
@@ -571,9 +565,9 @@ if (file.exists(bird_counts_path)) {
 (<code>brd_perpoint</code>) and the bird counts themselves
 (<code>brd_countdata</code>).</p>
 <p>Take a look at their structure (that is, what fields are included)
-and the data in them. We can see that <code>brd_perpoint</code> contains
-metadata fields describing the location, elevation, date and field-crew
-recorded weather conditions for each point-count survey.</p>
+and the data in them. We see that <code>brd_perpoint</code> contains
+fields describing the location, elevation, date and field-crew recorded
+weather conditions for each point-count survey.</p>
 <pre class="r"><code>str(bird.counts$brd_perpoint)</code></pre>
 <pre><code>## &#39;data.frame&#39;:    27076 obs. of  32 variables:
 ##  $ uid                       : chr  &quot;30d14ecc-65a8-4e73-bcb3-d5132c153da2&quot; &quot;f97b6fa3-5719-4c0d-9922-1b23ec949911&quot; &quot;6fdac273-77b0-4e30-86d1-f6ff94f92e66&quot; &quot;ff9f059e-46fa-471a-a41d-2ac759881ff0&quot; ...
@@ -710,7 +704,7 @@ recorded weather conditions for each point-count survey.</p>
 ## 10      JRUEB 20260106T223419Z RELEASE-2026</code></pre>
 <p><code>brd_countdata</code> contains data for the birds observed
 during each point-count survey, including identification, observation
-method, distance, and minutes where no birds were observed.</p>
+method, distance, and observed minute.</p>
 <pre class="r"><code>str(bird.counts$brd_countdata)</code></pre>
 <pre><code>## &#39;data.frame&#39;:    373518 obs. of  26 variables:
 ##  $ uid                    : chr  &quot;08b95360-854d-4d74-a276-93fc7d2423ca&quot; &quot;f2d2d4ce-c978-46a5-befb-4d3b749b1cdb&quot; &quot;754c7b57-1892-4f1f-9f49-594c40d47bfa&quot; &quot;6212a830-6d2d-4999-b169-19273526790e&quot; ...
@@ -821,10 +815,10 @@ we need to clean the data a bit. This includes:</p>
 <p>Each point-count survey needs a unique identifier so that we can
 match each point-count survey record (brd_perpoint) to its corresponding
 bird data (brd_countdata). We extract the survey year from eventID and
-then combine the plot, point, year, and bout into a single key called
-pointSurveyID for each of the tables. Note, because the siteID is
-already included in the plotID (e.g., BART_012), siteID is not included
-in the construction of <code>pointSurveyID</code>.</p>
+then combine the site, plot, point, year, and bout into a single key
+called pointSurveyID for each of the tables. Note, because the siteID is
+already included in the plotID (e.g., BART_012), siteID is not actually
+included in the construction of <code>pointSurveyID</code>.</p>
 <pre class="r"><code>brd_perpoint_clean &lt;- bird.counts$brd_perpoint %&gt;%
   mutate(year = str_extract(eventID, &quot;\\d{4}&quot;)) %&gt;%
   mutate(pointSurveyID = paste(plotID, &quot;point&quot;, pointID, year, &quot;bout&quot;, boutNumber, sep = &quot;_&quot;))
@@ -843,9 +837,10 @@ purposes, we keep only surveys marked as “OK”.</p>
 </div>
 <div id="remove-surveys-prior-to-2017" class="section level3">
 <h3>Remove surveys prior to 2017</h3>
-<p>Bird surveys were not conducted consistently at all sites in the
-early years of the NEON program. To ensure a consistent survey effort
-across sites and years, we remove surveys conducted before 2017.</p>
+<p>Point-count surveys were not conducted consistently at all sites in
+the early years of the NEON program. To ensure a consistent survey
+effort across sites and years, we remove surveys conducted before
+2017.</p>
 <pre class="r"><code>brd_perpoint_clean &lt;- brd_perpoint_clean %&gt;%
   filter(year &gt;= 2017)</code></pre>
 </div>
@@ -1033,9 +1028,9 @@ head(brd_joineddata_clean, n=10)</code></pre>
 <div id="building-the-detection-history" class="section level2">
 <h2>Building the Detection History</h2>
 <p>Occupancy models require <strong>detection histories</strong>, which
-record whether a species was detected during repeated surveys. For
-single-species occupancy models, detection histories are typically
-represented as a table of 0s and 1s, where:</p>
+record whether a species was detected or not. For single-species
+occupancy models, detection histories are typically represented as a
+table of 0s and 1s, where:</p>
 <ul>
 <li>Each row represents a sampling location</li>
 <li>Each column represents a survey (time).</li>
@@ -1046,9 +1041,7 @@ while 0 indicates it was not detected.</p>
 question. For NEON observational data, locations could be defined at the
 plot or site level, depending on the scale of the analysis. Survey could
 also be defined in different ways. For example, individual surveys could
-be aggregated within a year, month, or other time period, as long as
-survey effort between and within each aggregated survey is
-consistent.</p>
+be aggregated within a year, month, or other time period.</p>
 <p>In this tutorial, we construct detection histories at the site level
 and define survey occasions by year (i.e., each cell in our table will
 correspond to a <strong>site-year</strong> combination)</p>
@@ -1094,7 +1087,8 @@ detections &lt;- brd_single_species %&gt;%
 site–year combinations without a detection are filled with 0, indicating
 the species was not detected. The data are then reshaped so that each
 row represents a site and each column represents a year, as explained
-above.</p>
+above. We also sort the table alphabetically by siteID and
+chronologically by year.</p>
 <pre class="r"><code># Join and fill
 detection_history &lt;- valid_site_years %&gt;%
   left_join(detections, by = c(&quot;siteID&quot;, &quot;year&quot;)) %&gt;%
@@ -1147,17 +1141,17 @@ history and any associated data needed to fit an occupancy model.</p>
 a detection history containing the detection (=1) and non-detection (=0)
 data with observations from a sampling unit along a row, and surveys in
 the columns. Missing values are allowed (=NA).</p>
-<p>Additional arguments allow users to include site-level covariates,
-survey-level covariates, or multi-season information, but we will not
-include those in this initial model.</p>
-<p>In this example, we provide three arguments:</p>
+<p>Additional arguments allow users to include site-level or
+survey-level covariates but we will not include those in this initial
+model.</p>
+<p>In this example, we provide two arguments:</p>
 <ul>
 <li>data – the detection history (0/1 data)</li>
 <li>unitnames – a label for each sampling unit (here, NEON sites)</li>
 </ul>
 <pre class="r"><code>birds_pao_simple &lt;- createPao(
   data = detection_history[, -1], # detection/nondetection data (survey columns only) from detection_history
-  unitnames = detection_history$siteID # site IDs from detection_history
+  unitnames = detection_history$siteID # siteIDs from detection_history
 )</code></pre>
 </div>
 <div id="fit-the-model" class="section level3">
@@ -1382,34 +1376,37 @@ much more difficult to detect under the same protocol.</p>
 across all sites and surveys. Many factors can influence whether a
 species occurs at a site and whether it is detected during a survey.
 These factors can be included in occupancy models as covariates.</p>
-<p>Site characteristics can influence occupancy <strong>or</strong>
-detection. For example:</p>
+<p><strong>Site</strong> characteristics can influence occupancy
+<strong>or</strong> detection. For example:</p>
 <ul>
 <li>Vegetation density – dense vegetation may make birds harder to
 detect than in more open habitats.</li>
 <li>Habitat type – some species only occupy sites with suitable habitat,
 such as forests, wetlands, or grasslands.</li>
 </ul>
-<p>Survey characteristics can <strong>only</strong> affect detection.
-For example:</p>
+<p><strong>Survey</strong> characteristics can <strong>only</strong>
+affect detection. For example:</p>
 <ul>
 <li>Observer differences – some observers may be better at detecting or
 identifying certain species.</li>
 <li>Weather conditions – rain, wind, or poor visibility can make birds
 harder to hear or see.</li>
 </ul>
-<p>By including these variables in our model, we can either
-<strong>account for known sources of variation to improve model
-fit</strong> or <strong>test whether occupancy or detection is a
-function of a particular covariate</strong>.</p>
+<p>By including these variables in our model, we can either:</p>
+<ul>
+<li><strong>Account for known sources of variation to improve model
+fit</strong> or</li>
+<li><strong>Test whether occupancy or detection is dependent on a
+particular covariate</strong>.</li>
+</ul>
 <div id="site-covariates" class="section level3">
 <h3>Site Covariates</h3>
 <p>So far, our model assumed that occupancy and detection probabilities
-were constant across all sites. In reality, site characteristics often
-influence whether a species occupies a location or is more easily
-detected. We can test these effects by including site covariates in the
-occupancy model. Remember that site characteristics can influence
-occupancy <strong>or</strong> detection.</p>
+were constant across all sites and surveys. In reality, site
+characteristics often influence whether a species occupies a location or
+is more easily detected. We can test these effects by including site
+covariates in the occupancy model. Remember that site characteristics
+can influence both occupancy and/or detection.</p>
 <p>In this example, we examine whether <strong>elevation</strong>
 influences the occupancy probability of <em>Melanerpes carolinus</em>
 (Red-bellied Woodpecker).</p>
@@ -1571,17 +1568,15 @@ of the data.</p>
 <p>We can also calculate a p-value using a likelihood ratio test (LRT)
 to quantify whether the model including elevation provides a
 significantly better fit than the simpler model without it. This method
-is only appropriate for “nested” models only, meaning the simpler model
-is a special case of the more complex one. In this case, the simple
-model (<code>psi ~ 1</code>) is a reduced version of the model that
-includes elevation (<code>psi ~ elevation</code>).</p>
+is appropriate for “nested” models only, meaning the simpler model is a
+special case of the more complex one. In this case, the simple model
+(<code>psi ~ 1</code>) is a reduced version of the model that includes
+elevation (<code>psi ~ elevation</code>).</p>
 <p>The likelihood ratio test compares how well the two models explain
 the data by examining the difference in their −2 log-likelihood values.
-If the model with the additional parameter (elevation) fits the data
-substantially better, the difference in −2 log-likelihood values will be
-large. The difference in −2 log-likelihood values is compared to a
-chi-square distribution, where the degrees of freedom equal the
-difference in the number of parameters between the two models.</p>
+The difference in −2 log-likelihood values is compared to a chi-square
+distribution, where the degrees of freedom equals the difference in the
+number of parameters between the two models.</p>
 <pre class="r"><code>#get the difference in the neg2loglike between the two models
 diff &lt;- abs(birds_occupancy_simple$neg2loglike - birds_occupancy_sitecov$neg2loglike)
 
@@ -1637,6 +1632,13 @@ ggplot(data, aes(x = elevation, y = est)) +
   scale_y_continuous(limits = c(0, 1)) +
   theme_bw()</code></pre>
 <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABUAAAAPACAMAAADDuCPrAAABX1BMVEUAAAAAADoAAGYAOjoAOmYAOpAAZrYCAgIJCQkKCgovLy8zMzM6AAA6OgA6Ojo6OmY6OpA6Zjo6ZmY6ZpA6ZrY6kJA6kLY6kNtNTU1NTW5NTY5Nbo5NbqtNjshmAABmADpmOgBmOjpmOpBmZgBmZjpmZmZmZpBmkGZmkJBmkLZmkNtmtttmtv9uTU1ubm5ubo5ujqtujshuq+SOTU2Obk2Obm6Oq8iOq+SOyOSOyP+QOgCQOjqQZjqQZmaQkGaQkLaQtraQttuQ2/+rbk2rbm6rjm6ryOSr5P+2ZgC2Zjq2Zma2kDq2kGa2kJC2tpC2tra2ttu229u22/+2///Ijk3Ijm7IyKvI5P/I///bkDrbkGbbtmbbtpDbtrbbttvb27bb29vb2//b///kq27kyI7kyKvk///r6+v/tmb/yI7/25D/27b/29v/5Kv/5Mj/5OT//7b//8j//9v//+T///8bgOHIAAAACXBIWXMAAB2HAAAdhwGP5fFlAAAgAElEQVR4nO2di5tUVX6ud4+XpqDFBDixUGQ0B0wY7RMV55xIdG7EDEYzzigTZGQyKBm5CASa+v+fU7t+u65d3fZetetb6+t+3+eJ9IXt/ubNrz537cuqagAAAElUuQMAALhCgQIAJEKBAgAkQoECACRCgQIAJEKBAgAkQoECACRCgQIAJEKBAgAkQoECACRCgQIAJEKBAgAkQoECACQiLdATAADW5CzQhG3u3u08xvoxzGzpGdEiDDOvyTMFqsAws6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDNToAHzpsHSM6JFGGamQAPmTYOlZ0SLMMxMgQbMmwZLz4gWYZiZAg2YNw2WnhEtwjAzBRowbxosPSNahGFmCjRg3jRYeka0CMPMFGjAvGmw9IxoEYaZKdCAedNg6RnRIgwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLxpsPSMaBGGmSnQgHnTYOkZ0SIMM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaMC8abD0jGgRhpkLL9Cnl1+f+/7ZJ9v9/rs3lnwzu/OEHTFvGiw9I1qEYebCC/R6f65An17u17z69a5v5naesCPmTYOlZ0SLMMxcdIE+u96fL9Dr/XM3Bo+v9s99v/jN3M4TdsW8abD0jGgRhplLLtC/ftCfL9BH26PDzaeXz/524Zv5nSfsi3nTYOkZ0SIMMxdcoHf6/ff+e65A7zTf3em/v/DN/M4Tdsa8abD0jGgRhplLLtDX/m1wf65Ar/c/HP05+uncN/M7T9gZ86bB0jOiRRhmLrhAa+ba8dnV5t36o+1z3899M95pw10AAF8oUACARNZdoK9+PffN/Ea8hS8XS8+IFmGY+TC9hZ/sPGFHzJsGS8+IFmGYmQINmDcNlp4RLcIws1OBchV+AcPMlp4RLcIws1WBjm/5bO4DfX/uhzM7T9gR86bB0jOiRRhmtipQnkSaxzCzpWdEizDMbFWgz672X5s8/j73zfzOE3bEvGmw9IxoEYaZTQr00fboOPPx7AJMj1mNKXeA9lh6RrQIw8xeBTp4/MmwMt9tDjnnvpndecKOmDcNlp4RLcIwc+EFmrbzhG2YNw2WnhEtwjAzBRowbxosPSNahGFmCjRg3jRYeka0CMPMFGjAvGmw9IxoEYaZKdCAedNg6RnRIgwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLxpsPSMaBGGmSnQgHnTYOkZ0SIMM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDNToAHzpsHSM6JFGGamQAPmTYOlZ0SLMMxMgQbMmwZLz4gWYZiZAg2YNw2WnhEtwjAzBRowbxosPSNahGFmCjRg3jRYeka0CMPMFGjAvGmw9IxoEYaZKdCAedNg6RnRIgwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLxpsPSMaBGGmSnQgHnTYOkZ0SIMM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDNToAHzpsHSM6JFGGamQAPmTYOlZ0SLMMxMgQbMmwZLz4gWYZiZAg2YNw2WnhEtwjAzBRowbxosPSNahGFmCjRg3jRYeka0CMPMFGjAvGmw9IxoEYaZKdCAedNg6RnRIgwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLxpsPSMaBGGmSnQgHnTYOkZ0SIMM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDNToAHzpsHSM6JFGGamQAPmTYOlZ0SLMMxMgQbMmwZLz4gWYZiZAg2YNw2WnhEtwjAzBRowbxosPSNahGFmCjRg3jRYeka0CMPMFGjAvGmw9IxoEYaZKdCAedNg6RnRIgwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLxpsPSMaBGGmSnQgHnTYOkZ0SIMM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmPlQFuhdAABfOAJVYJjZ0jOiRRhmPpRHoAnbMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLxpsPSMaBGGmSnQgHnTYOkZ0SIMM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDNToAHzpsHSM6JFGGamQAPmTYOlZ0SLMMxMgQbMmwZLz4gWYZiZAg2YNw2WnhEtwjAzBRowbxosPSNahGFmCjRg3jRYeka0CMPMFGjAvGmw9IxoEYaZKdCAedNg6RnRIgwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLxpsPSMaBGGmSnQgHnTYOkZ0SIMM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDNToAHzpsHSM6JFGGamQAPmTYOlZ0SLMMxMgQbMmwZLz4gWYZiZAg2YNw2WnhEtwjAzBRowbxosPSNahGFmCjS4e6w3pPMo64V5E2EY2lK0YWYKNDh2/MQQswZl3kQYhrYUbZiZAh3ROz4qULMGZd5EGIa2FG2YmQKt6Z2oC3RziDToqjBvIgxDW4o2zEyB1huMCnSzV9WsI9GaYN5EGIa2FG2YmQId1AegwwJt+tOpQZk3EYahLUUbZqZAB1Ggk/40alDmTYRhaEvRhpkp0MGoQI9tVpVdgzJvIgxDW4o2zEyBDkbnQDdnC9SlQZk3EYahLUUbZqZAa4YFWlV+Dcq8iTAMbSnaMDMFOqK3UKAeDcq8iTAMbSnaMDMFGiwWqEWDMm8iDENbijbMTIEGdxcL1KFBmTcRhqEtRRtmpkCDu8cX+rNn0KDMmwjD0JaiDTNToMHdu72FAt3c7DxY1zBvIgxDW4o2zEyBBkMP8w3a620Wv7II8ybCMLSlaMPMFGhQe+jN9eewQFP+RUqYNxGGoS1FG2amQIORh95sf/Y2i1/cjnkTYRjaUrRhZgo0aDzM9mePAu0ey9c1okUYZqZAg7GHSX8OD0Ap0O6xfF0jWoRhZgo0mHjY3OxN+pNzoJ1j+bpGtAjDzBRoMPUwOf4s/gCUeVNhGNpStGFmCjSY8VDVH+3h0J/MmwrD0JaiDTNToMGsh57L58sxbyIMQ1uKNsxMgQZzHnomnxHPvIkwDG0p2jAzBRowbxosPSNahGFmCjRg3jRYeka0CMPMFGjAvGmw9IxoEYaZKdCAedNg6RnRIgwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLxpsPSMaBGGmSnQgHnTYOkZ0SIMM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYeasBfrkp2e+XcfOE7Y5qIeiFqtn3kQYhrYUbZg5b4Ger6rnLn3X+c4Ttjmgh7I+Lol5E2EY2lK0YeasBbrzaVXz/K+77dD1FWj0ZzENyryJMAxtKdowc+5zoH95c9ShL/+6y50nbHMgD+P+LKVBmTcRhqEtRRtmzl2gQ25Fh57+srOdJ2xzEA8nZgo0ZR+dw7yJMAxtKdowcwEFOnwrf+uNukI3Ls1fUnr2yXa//+6N6fdX+2Ne/XoweHp5+vX8zhMCH8TDtD8LOQRl3kQYhrYUbZi5iAId8vCjrdFb+ZnD0KYgp/24UKCPtilQOyxf14gWYZi5iALd+fylasyZyU+v98/dGDy+2j/3/cJff7R99rfDP+73X99j563jUqAqLF/XiBZhmDl/gY7bs74W//DTqnql+fmj7dGh5dPLo7acYXgg+n795/X4Y8nOEwJzDlSD5esa0SIMM2cu0Obs5/Ru0HvVC81Xd5oDzDuLPXknjkmfXV1s1snOEwJzFV6D5esa0SIMM+e9D/RKtXjx6Mn5n3wVX13vfzj6c/Gd+tPL8Yunl8/95wf9/j/dGCwiuQ+0hEeSmDcRhqEtRRtmzv4k0sb87UtPzjdHoJMDzEfb8ydBx0em42tITc+Odtpwd20cO15zbOYLAICOOWiBnv7Dwo92ft8cje5VoJNzovf7/fe+H/zPJ/3JO3lBgd49VjPuTxoUANbA6qsxzRTo3H1K98dX5cdHoruvJa1/NaZCTobyjkeEYWhL0YaZ854D/fit6VPwDy78zewj8XscgT67On3LHtzfdZ/T2gu0lMvxzJsIw9CWog0zZz4HOr5itPjNngW6cDy69CdrL9BSbghl3kQYhrYUbZi5nAJ9sDVXoHtchd999/ziRSYKtGQsX9eIFmGYOVeB1hfgF3lhblW78f2f8/eBTs54Tt7L765UCrRcLF/XiBZhmDnbEei93QX6ztxfWPok0szd89ejOHefFOUcaMFYvq4RLcIwc7YC3fn3ixcvbG2cujjmHxfuaBo242u7noV/enlywvPRdn0b0+MPdj8rz1X4crF8XSNahGHmcs6B7uLxzGpMzfohcyc87zSLMe16FEnwoXJlLE3PvIkwDG0p2jBzObcx7ebxJ8N+fHdUmOMCnbtn6fHP+/2z7y0ef2o+lbOID0di3kQYhrYUbZg5/2pMa9h5wjatPfAsfBKWr2tEizDMnKlAdz6+ODz4HP5zln0PR9vsPGEb5k2DpWdEizDMnKlAn5yvfvLV4r1M+50QbbXzhG2YNw2WnhEtwjAzBRowbxosPSNahGFmzoEGzJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRh5nxX4XfDVfiWGGa29IxoEYaZ811E2o31RaQc94UybyIMQ1uKNsxMgQaresjyZBLzJsIwtKVow8ycAw1W9JDn2XjmTYRhaEvRhpkp0GA1D5lWZ2LeRBiGthRtmJkCDVbykGt9UOZNhGFoS9GGmXkWPljJQ64V6pk3EYahLUUbZuZRzoAC1WD5uka0CMPMFGhAgWqwfF0jWoRhZs6BBpwD1WD5uka0CMPMFGjAVXgNlq9rRIswzFxCge7c7njnCdtwH6gGy9c1okUYZs5eoLfeHJ3/PP1lhztP2IYnkTRYvq4RLcIwc+YC3bkyuYR0pqObmHgWvmQsX9eIFmGYOW+B1v25ceqXX/zHhWGDvtjZzhO2Yd40WHpGtAjDzHkL9F5VvRJf7XxWVe90tfOEbZg3DZaeES3CMHPez4W/Mu7PIdc6OwSlQMvF0jOiRRhmzlqgT85v/GbyzYMt2xvpc2GY2dIzokUYZs5coDOdOffNajtP2IZ502DpGdEiDDNnfgs/dwT6gutiIrkwzGzpGdEiDDPnvYh0c+a8582Z86Er7jxhG+ZNg6VnRIswzJy3QJ+cr/6uOey82dlaIhRowVh6RrQIw8yZP5XzQtwH+ruLW1V1ynY90FwYZrb0jGgRhpn5ULmAedNg6RnRIgwzU6AB86bB0jOiRRhmzr6YyDp2nrAN86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYOX+B7txuuPX3nANth2FmS8+IFmGYOXOB/vARF5HSMcxs6RnRIgwzZ7+RfoYXKNB2GGa29IxoEYaZcz/KWW2curBV/1+18XZnO0/YhnnTYOkZ0SIMM+deD/SF7+p/vlN3aVdriVCgBWPpGdEiDDOXsB5oLCNy7XCuSL/Oz0pi3kQYhrYUbZi5hPVA743WZLp3KFekX+undTJvIgxDW4o2zFxGgdbv3p+cP4Trga738+KZNxGGoS1FG2YuYUHl+DCPw7gi/bg/19SgzJsIw9CWog0z570Kf2109jNOhR7Cz0Q6MVOgKaF+DOZNhGFoS9GGmfMW6IOt6vSXzYdzXuvsMnwxBTrtz/UcgjJvIgxDW4o2zJz5SaRro+eP7lXVxlZ1+D7SgwLdheXrGtEiDDPnfhb+T/Ub951roweRDt19oBToLixf14gWYZg5d4EOBv817M2db06evNRVf5ZToJwD3YXl6xrRIgwz5y/QNew8YRuuwmuwfF0jWoRh5hIKdOd2xztP2Ib7QDVYvq4RLcIwc/YCvfXmaCWm0192uPOEbXgSSYPl6xrRIgwzZy7QnSuTxezOHL5zoDU8Cz+H5esa0SIMM+ct0Lo/68+F/48Lwwbt6lH4sgp0nRhmtvSMaBGGmfMW6L3JzZ87n1WHczWmdWKY2dIzokUYZs69Huj05vlrh3I1prVimNnSM6JFGGYuYT3Q4BA+C79uDDNbeka0CMPMJSxnt+Sb1XaesA3zpsHSM6JFGGYuYTm74MHWoVtMZN0YZrb0jGgRhplzf6jcizNfH7rFRNaNYWZLz4gWYZg5+8ca/11z2Hmzs4+Fp0ALxtIzokUYZs5UoDsfXxxxIe4D/d3Frao69RZv4dthmNnSM6JFGGbOVKDDQ8/dcBGpJYaZLT0jWoRhZgo0YN40WHpGtAjDzNkXE1nHzhO2Yd40WHpGtAjDzBRooJu3DlcXYd5EGIa2FG2YmQINZPPW5fp2zJsIw9CWog0zZy/Qh5+frKqNk5e+7XDnCduo5q3TFZaZNxGGoS1FG2bOXaA3J5eQurqNvugC7fYzPpg3EYahLUUbZs5coHV/Pnfq4oWXumzQcgu0+ZS5zSFVB58yx7yJMAxtKdowc94CfbBVvRCf5fHDlWrmufgVd56wjWbemv4cXUfq4LQw8ybCMLSlaMPMeQv02vTD4HeuHIH1QHvT/uxtrv4mnnkTYRjaUrRhZlZjCnQF2vRnb3P106DMmwjD0JaiDTOzHmggOwfaa97AV9Xqp0GZNxGGoS1FG2amQAPZVfimPzerDk6DMm8iDENbijbMnPszkaYfJHevOvxv4YcNujntz5VPgzJvIgxDW4o2zMxFpEA2b9W0P1c+Dcq8iTAMbSnaMHP225ie/8Poq7+8cRRuYxpyYtieVdOfvRO9lU6DMm8iDENbijbMXMCN9NXJkyc7fRSp6AKdnAatD0BXfCCJeRNhGNpStGHm3I9yfrPVPMm58XZ3O0/YRjhvvc1pf1KgFhiGthRtmDl3gQ52bl0YHoGe+nVHF5BGO0/YRjlv1bQ/KVALDENbijbMnL1A17HzhG2U83aiqh+GHz0TX610IZ55E2EY2lK0YebMV+FPf7mOnSdsI523Zk2mzdFh6AoNyryJMAxtKdowc+Yb6WfuA+1w5wnbaOetN+3PVRqUeRNhGNpStGHmcp5E6nDnCduI56037c8VGpR5E2EY2lK0YeZyFhPpcOcJ26jnrbdZNadBV1galHkTYRjaUrRh5rznQG+OlwPtducJ28jnrVkaNO7hSvx3MG8iDENbijbMnLdAH342WpC+4a0j8Cz8hDgNOroev1klvoln3kQYhrYUbZg590WkWTpbjemuAceOHz/e9Ofwj2O54wBAOeQt0IRt5P/BrpcGnfRnL+00KP/BFmEY2lK0YWZupA/089Y7UY0LtNfb3Ez5VzBvIgxDW4o2zEyBBhnmbXIAmnwdiXkTYRjaUrRh5rwF+u16dp6wTY55a64gVcnXkZg3EYahLUUbZs5XoDuf1gsxPfd2h6uIjHeesE2OeWuOPaNFU26nZ95EGIa2FG2YOVuBPhivY/d85w8juRToiVidPg5AUx5IYt5EGIa2FG2YOVeBji7AP/e3Lw3/2dVHIU13nrBNlnnrbfbiTqZqtLZy69zMmwjD0JaiDTPnKtCbVXyEx63hgWjXC4rYFOhgtj8TDkGZNxGGoS1FG2bOVKA7V8a9OWzSrj5MbrLzhG0yzVsvzoImLirCvIkwDG0p2jBzvgJt1hF5sNX5e3ijAh2M11amQEvGMLSlaMPMmQr0yfnxc0fTr7rbecI2uebtRLO4MudAS8YwtKVow8wUaJBt3mYKtPW2zJsIw9CWog0zU6BBvnnrJfcn86bCMLSlaMPMFGiQcd56ycvSM28iDENbijbMTIEGOedt9CnHKRsybyIMQ1uKNsxMgQbMmwZLz4gWYZiZAg2YNw2WnhEtwjBzvgLdzZFaULkLDDNbeka0CMPMFGjAvGmw9IxoEYaZcz2J9PHF3RypD5XrAsPMlp4RLcIwMyvSB8ybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaFDOvLV4LqmYzAenHM9tMAxtKdowMwUaFDNvbZ6MLyVzC4rx3ArD0JaiDTNToEEp89ZqbaZCMrehFM/tMAxtKdowMwUaFDJv7VYHLSNzKwrx3BLD0JaiDTNToEEZ89ZyffoiMrejDM9tMQxtKdowMwUalDFv0/480CFoEZnbUYbnthiGthRtmJkCDcqYNwq0TAxDW4o2zJy1QJ/89My369h5wjZlzBsFWiaGoS1FG2bOW6Dnq+q5Sx1/qLFzgXIOtEwMQ1uKNsyctUB3Ph0tY/f8r7vtUN8C5Sp8mRiGthRtmDn3OdC/vDnq0Jd/3eXOE7YpZd4m94Ee5IGkQjK3oRTP7TAMbSnaMHPuAh1yKzr09Jed7Txhm2LmrXkS6UAPJJWSuQXFeG6FYWhL0YaZCyjQ4Vv5W2/UFbpxqZtLStYFGs/CH+yBpGIyH5xyPLfBMLSlaMPMRRTokIcfbY3eyndxGOpdoDUHPBVaVOaDUZbng2IY2lK0YeYiCnTn85cmH4x0poOdJ2xT1Lwd9GJ8SZkPSFGeD4xhaEvRhpnzF+i4Petr8Q8/rapXVt95wjZFzdtBbwctKfMBKcrzgTEMbSnaMHPmAm3Ofk7vBr1XvbDyPU0UaLkU5fnAGIa2FG2YOe99oFeqxYtHT86v/uHGFGi5FOX5wBiGthRtmDn7k0gb87cvPTnPESjnQEvDMLSlaMPMmQv09B8WfrTz+9VvZbIvUK7CF4ZhaEvRhpnzX0Raw84Ttils3rgPtCgMQ1uKNsxMgQalzRtPIpWEYWhL0YaZCynQ253uPGGb4uaNZ+ELwjC0pWjDzLkLdOfzl78aXU3q7lH4w1GgB8Ews6VnRIswzJy5QO9tVT/5qrkc/05nO0/YhnnTYOkZ0SIMM+ct0AdbVdw4/+ePtqqN33S184RtmDcNlp4RLcIwc94CvVY9P37nvnOlerGrnSdsw7xpsPSMaBGGmTPfBzpz1Plga/VnkJqdJ2zDvGmw9IxoEYaZMxfoTGd28RBns/OEbZg3DZaeES3CMDNHoAHzpsHSM6JFGGbOfQ70xaVfr7jzhG2YNw2WnhEtwjBz3gK9V1Wn49n3eiXQru5jokDLxdIzokUYZs58H+i1ejW7kydP1p/n0dUBKAVaMJaeES3CMHPuBZU/G3+Ux8bPutt5wjbMmwZLz4gWYZg596Ocg51bF4ZHoKd+ufIqoDM7T9iGedNg6RnRIgwzZy/Qdew8YRvmTYOlZ0SLMMxMgQbMmwZLz4gWYZi5gAK9PWb1teibnSdsw7xpsPSMaBGGmTMX6A8fVVO4kX4/liwQWnzm3ZTveRmGoS1FG2bOW6D1MnYU6IFYtkR96ZmXULznpRiGthRtmDlvgd6squf/8Ysxv+/oSvxhLNClH5JUeOZllO55OYahLUUbZs79ufCd3T0/u/OEbQqft+Uf01l25qUU7nkPDENbijbMXM5iIh3uPGGbsudtjw+KLzrzcsr2vBeGoS1FG2YuZzm7DneesE3Z8zbtz7lD0KIzL6dsz3thGNpStGHmzG/hOQI9EOMC3Rwyo7LozMsp2/NeGIa2FG2YOfdFpFfWsfOEbcqet6ZAN+s7mTanh6BFZ15O2Z73wjC0pWjDzHkLdHgI+vYadp6wTdnzFudAm/6cvokvOvNyyva8F4ahLUUbZs77Fv7jC1W1cepiw1vcxrQXvXF/9jZnToOWnXkphXveA8PQlqINM2e+iFRxI/3BGB53bo77c3IlvvDMyyjd83IMQ1uKNsxMgQbFz9tMf04OQUvPvITiPS/FMLSlaMPMBSwm0v3OE7Ypf96q+hL8CQo0B4ahLUUbZqZAg/Lnbcm9oMVn3k35npdhGNpStGFmCjQof96WPLru3lYAACAASURBVI1UfObdlO95GYahLUUbZs5foDvj5UBv/T3nQPdj9/Pw5WfehYHnJRiGthRtmJn1QAOHedu1IpNB5kUcPO/GMLSlaMPMJa0H+gIFuj+La4I6ZF7AwvMuDENbijbMnPtRzmrj1IWt+v+q7p5JOrQFurgqvUXmeTw8L2IY2lK0Yebc64G+8F39z3fqLn2hq082PrwFuoBhZkvPiBZhmLmE9UBjSZFrdY12s/OEbZg3DZaeES3CMHMJ64HeG61Lf6+z1ekp0HKx9IxoEYaZyyjQ+t37k/NdvYenQMvF0jOiRRhmLmFB5QdbdY92tzw9BVoulp4RLcIwc96r8NdGZz/jVGjUaCc7T9iGedNg6RnRIgwz5y3QB1vV6S/ry/Cv1GXKW/iWGGa29IxoEYaZMz+JdG30/NG9qtrYqjr7eI8jUqC93rFe78f/WlkYeh7wwlZhmDn3s/B/qt+471wbPYjEfaBt6J04cXz+Y+Id8PNcYxjaUrRh5twFOhj817A3d745efLSrv589sl2v//ujZmfPL3cH/Hq18t/3+w8IbDdvPXiMzo3zRrUzvMIw9CWog0z5y/QPWnaMsoyeLQ9U6BLft/sPGFnbvNW92dvtIKAV4O6eQ4MQ1uKNsxcRIHeXvrT6/1zNwaPr/bPfT/50f3+6/v+vtl5m6QNZvN2olf35+gQtEr5n5sNM88NhqEtRRtmzl6gt96sD6M2Tn+5+ItH281x5tnfTn52vf/+vr9vdp4Q2Gzepv05bNDcYdpg5rnBMLSlaMPMmQt058pkMbszC+dA7zRHm3empfns6kxZLvn9eOcJgc3mrdfbrPszzG3mTtMCM88NhqEtRRtmzlugdX9unPrVF/9xYatafBT+ev/D0Z8zb9ufXj73nx/0+/90Y4/fj3eeENhs3nqbdYGO/9tj9CbezHODYWhL0YaZs68H+ndx4LnzWTW/GtPkaPPR9uQk5/gaUl2dS34/+ciLu4ee49VMf1bHcscBgC458Hqg05vnr80fgi4r0Pv9/nvfD/7nk/7wV0e7QO8OC3Rcn8MvcqcBgC5ptR5osPAs/ExBTm5UGp/2rK8lLft9wxF4Cz84UU370+lCvJvnwDC0pWjDzCUsZ7fkm+VHoGPu9899v8/vj0KBDsYHoPXJUKMnOu08jzAMbSnaMHMJy9kFD7bmnuXcr0Drg86jXqCDSX/2No0e6PTzXGMY2lK0YebcF5FeXPp1zd5X2aMzj/RV+CHj++iH/UmBrhnD0JaiDTNnv41pfPvnzcWPhR/f3zm9z/PZ1dnO3P37yc4TAvvN24nmSc7NE05v4v081xiGthRtmDnvW/iP6/s/T1364nf1ny9fHPFW06hLnjS6HgebUaRH+kmkml6sJnJisz4GdTkINfQ84IWtwjBz5otI1W7GB6LDmnxt4Vn3R9v1bUyPPxj9aMnvxztPCOw4b73j9T1b0Z8uDeromRe2CsPM5Rbo4PHMakuPtkfHmXeaxZhuLP5+fucJgS3n7dhMf5o0qKVnXtgiDDNnX0xkHx5/MuzHd0fHl02BDh7/vN8/+973u34/v/OEfXnO2+iR+PHjAz2Hu0EtPfPCFmGYueQCTd55wjau89Y7McXhENTSMy9sEYaZKdDAdd4oUAWGoS1FG2bOW6APb8/ybVc7T9jGdd4oUAWGoS1FG2Yu6SISnwvfkrujpek5B7p2DENbijbMTIEGtvPWszoA9fTMC1uEYea8N9L/+YuGX7xRbfzq9x19rvGRKtBJg1r0p6dnXtgiDDMXcxFpYS2RlXaesI3xvPWM+tPTMy9sEYaZiynQwc2ZxZVX3HnCNs7z1qvJm+TAWHrmhS3CMHM5BdrdIehRK9AGix619MwLW4Rh5nIKdGFB5VV2nrCN/7x5vJO39MwLW4Rh5nIKdOEjPVbZecI29vNmci3J0jMvbBGGmYsp0J1rFW/hWzKT2eVuJkvPvLBFGGbOvB7oxTH1gqBcRGrJNLPN/fSWnnlhizDMXNCN9NzG1JZpZpsnOi0988IWYZi5mAJ97lJX/UmBFoylZ17YIgwzF3MOtMudJ2xjPm8U6FoxDG0p2jAzBRqYzxvnQNeKYWhL0YaZKdDAfd64Cr9ODENbijbMXEiB3u505wnb2M8b94GuEcPQlqINM+cu0J3PX/5qdDXp9Jfd7TxhG/9540mk9WEY2lK0YebMBXpva7QKaH05fuOdznaesM0hmDeehV8bhqEtRRtmzlugD7aa2z///NFWtfGbrnaesA3zpsHSM6JFGGbOW6DXqufH79x3rlQvdrXzhG2YNw2WnhEtwjBz5hvpZ446WUykNYaZLT0jWoRh5swFOtOZLGfXGsPMlp4RLcIwM0egAfOmwdIzokUYZs59DvTFpV+vuPOEbZg3DZaeES3CMHPeAr1XVae/HX318NOq6uo+Jgq03HuaLD3zwhZhmDnzfaDXqqraOHny5Nbwz64OQCnQgu+qt/TMC1uEYebMBbrz2Xg5u42fdbfzhG0O17yV+1ynpWde2CIMM+d+lHOwc+vC8Aj01C87Ww2UAi15ZRFLz7ywRRhmzl6g69h5wjaHad5KXtvO0jMvbBGGmSnQ4DDNW8mrK1t65oUtwjBzIQXKcnYp/EiBbg6R/pfrAFh65oUtwjBz7gJlObsV2L9AN+s7mTYLOwS19MwLW4RhZpazCw7TvMU50KY/C3sTb+mZF7YIw8wsZxccqnnrjfuzt1naaVBLz7ywRRhmzv0oJ8vZrcA+94H2Nsf9WdaVeEvPvLBFGGZmMZHgkM3bTH+WdQhq6ZkXtgjDzCxnFxy2eavqS/AF3spk6ZkXtgjDzByBBodt3kq9F9TSMy9sEYaZc58DZTm7Fdgnc6lPI1l65oUtwjAzy9kFh27eCn0e3tIzL2wRhplZzi44fPNW5opMlp55YYswzMxydsEhnLci1wS19MwLW4Rh5tyPcrKc3Qr8SOYSV6W39MwLW4Rh5uwFuo6dJ2zDvGmw9IxoEYaZKdCAedNg6RnRIgwz5y7Qndu3b3f47j12nrAN86bB0jOiRRhmzlqgP3y0FVeQOlzLbkCBloylZ0SLMMycsUB3PqqmdFmhFGi5WHpGtAjDzPkK9MHo6PPkxYsX3xzdxtTVYnYUaMlYeka0CMPM2Qp0tIby283pz2+GZdrVk/AUaMlYeka0CMPM2Qr02rAyp2/bfzjPk0jtMcxs6RnRIgwz5yrQBwsr0C9+v9LOE7Zh3jRYeka0CMPMuQr05uIR5/CI9JWudp6wDfOmwdIzokUYZs5UoDtXFhdfutd8OlIXO0/YhnnTYOkZ0SIMM2cq0CfnFy8a7f5J+s4TtmHeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDPnOwe6cNH9wRbnQNtimNnSM6JFGGbOdRV+10X3XZflV9h5wjbMmwZLz4gWYZg5V4HeW3j0qH4wic9EaolhZkvPiBZhmDlXgdb3Mc0cce5c6+4uJgq0YCw9I1qEYeZsj3LWa4mcGVfmD1e6XE2EAi0XS8+IFmGYOd9qTDfrNZhO/eoPt2//brSu3dvd7TxhG+ZNg6VnRIswzJxxPdBvtmbWA93orj8p0IKx9IxoEYaZc65Iv/PpuEI3LnX5sR4UaLlYeka0CMPMmT8T6eEXv7j41q++7XjnCdswbxosPSNahGHm3B8qt5adJ2xzhOYt68fFW3rmhS3CMDMFGhydeeudqMnVoJaeeWGLMMxMgQZHZt6iP7M1qKVnXtgiDDNToMFRmbdxf+ZqUEvPvLBFGGamQIMjMm8nZgo0RdPKWHrmhS3CMDMFGhyReZv2Z6ZDUEvPvLBFGGamQIMjMm8UaBKGoS1FG2amQIMjMm8UaBKGoS1FG2amQIMjMm+cA03CMLSlaMPMFGhwVOaNq/ApGIa2FG2YOVeBPry9m66e6KRA94H7QBMwDG0p2jBzvg+V2w0fKtcSnkQSYRjaUrRhZgo0OELzxrPwrTEMbSnaMHOuT+X88xcjPquqjbd+9cUXv3ip2rj0ez6Vsx2GmS09I1qEYea8F5GGB6Ljz+b8prMDUAq0YCw9I1qEYea8BXpt5rONb/Kxxm0xzGzpGdEiDDNnLdCdKzOfJPdgq6uP5aRAy8XSM6JFGGbOWqBPzs+8bZ/7ZrWdJ2zDvGmw9IxoEYaZMxfo3BFoZwV6FwDAlwOfA31x6dcrFmjCNvwHW4OlZ0SLMMyc9yLSvao6Eyc+dz6tqne62nnCNsybBkvPiBZhmDnzs/DXqqp6+eLFiy8N/zzT2c4TtmHeNFh6RrQIw8yZC7Q+8Gx4ZY+/krDzhG2YNw2WnhEtwjBz9tWYHn5eH30+d6nDz4anQMvF0jOiRRhmzl6g69h5wjbMmwZLz4gWYZi5hALd6fDoc7TzhG2YNw2WnhEtwjBz9gK99Wa9DNOTn17q6DGkAQVaMpaeES3CMHMRF5GGBXq+er6rtUQo0IKx9IxoEYaZ89/G9Pw/bP3kq51/qaquHoWnQAvG0jOiRRhmzn4j/dvNQ/DfbHEjfVsMM1t6RrQIw8wFLGfXrCLCcnatMcxs6RnRIgwzF7CcXVOgHS4mkrAN86bB0jOiRRhmLmA5u6ZAWc6uNYaZLT0jWoRhZgo0YN40WHpGtAjDzJnfwtcXjprmvNfZZXgKtFwsPSNahGHmvBeRRheOokCHZcpFpJYYZrb0jGgRhpnzFuiDrerMd6MC/eGNamZ1+hV3nrAN86bB0jOiRRhmznwj/c2qqk5ubZx6qcv17CjQcrH0jGgRhplzPwv/py3WA03GMLOlZ0SLMMycu0AHDz8/Wa8HevrLDneesA3zpsHSM6JFGGbOXqDr2HnCNsybBkvPiBZhmDnvbUwfvzW9c+nBhb/hNqZ2GGa29IxoEYaZC7iRftk3q+08YRvmTYOlZ0SLMMxcToHyLHxrDDNbeka0CMPMuQr0yflqFzyJ1BLDzJaeES3CMHO2I9B7uwuU9UBbYpjZ0jOiRRhmzlagO/9+8eKFrY1TF8f84x8623nCNsybBkvPiBZhmLmcc6Ad7jxhG+ZNg6VnRIswzFzObUwd7jxhG+ZNg6VnRIswzMyN9AHzpsHSM6JFGGYupEBvd7rzhG2YNw2WnhEtwjBz7gLd+fzl0aL0VYcPw1Og5WLpGdEiDDNnLtB7W1V8qkdVbXR1FxMFWjCWnhEtwjBz9gWV4/b5P3+0xYLKrTHMbOkZ0SIMM+f+XPjnx+/c+UiP9hhmtvSMaBGGmTPfBzpz1Mmz8K0xzGzpGdEiDDOXcyM9qzG1xjCzpWdEizDMzBFowLxpsPSMaBGGmXOfA31x6dcr7jxhG+ZNg6VnRIswzJy3QO9V1elvR189/JTVmFpjmNnSM6JFGGbOfB/otaqqNk6ePFl/NmdXB6AUaMFYeka0CMPMmQt057PxYqAbP+tu5wnbMG8aLD0jWoRh5tyPcg52bl0YHoGe+mWHyzJRoOVi6RnRIgwzZy/Qdew8YRvmTYOlZ0SLMMxMgQbMmwZLz4gWYZg5U4HufHzxre/qf87S1erKFGi5WHpGtAjDzJkK9Mn5ehWmhY/m5Eb6lhhmtvSMaBGGmSnQgHnTYOkZ0SIMM3MONGDeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDPnKtCHt3fzbVc7T9iGedNg6RnRIgwz57uItBsuIrXEMLOlZ0SLMMxMgQbMmwZLz4gWYZg51430f/5ixGdVtfHWr7744hcvVRuXfs+N9O0wzGzpGdEiDDPnvYg0PBB9pfnym84OQCnQgrH0jGgRhplzr0j/yuTrm6xI3xbDzJaeES3CMHPWAt25MveZSC/wFr4dhpktPSNahGFmPpUzYN40WHpGtAjDzHwqZ8C8abD0jGgRhplznwPlUzlXwDCzpWdEizDMnP1TOc/Eic8dPpWzPYaZLT0jWoRh5gI+lfPlixcvvjT880xnO0/YhnnTYOkZ0SIMM+f+VM5PJ88hvbLHX0nYecI2zJsGS8+IFmGYOftqTA8/r48+n7vU1UoiAwq0ZCw9I1qEYebsBbqOnSdsw7xpsPSMaBGGmUso0J0Ojz5HO0/YhnnTYOkZ0SIMM2cv0Ftv1sswPfnppY4eQxpQoCVj6RnRIgwzF3ERaVig56vnu1pLhAItGEvPiBZhmDn/bUzP/8PWT77a+Zeq6upReAq0YCw9I1qEYebsN9K/3TwE/80WN9K3xTCzpWdEizDMnPtRzlcmq4iwnF1rDDNbeka0CMPMBSxn1xQoi4m0xjCzpWdEizDMXMBydk2BspxdawwzW3pGtAjDzBRowLxpsPSMaBGGmTO/ha8vHDXNea+zy/AUaLlYeka0CMPMeS8ijS4cRYEOy5SLSC0xzGzpGdEiDDPnLdAHW9WZ70YF+sMb1czq9CvuPGEb5k2DpWdEizDMnPlG+ptVVZ3c2jj1Upfr2VGg5WLpGdEiDDPnfhb+T1usB5qMYWZLz4gWYZg5d4EOHn5+sl4P9PSXHe48YRvmTYOlZ0SLMMycvUDXsfOEbZg3DZaeES3CMHPmRzm7PPCc7jxhG+ZNg6VnRIswzJz5RvrOFhCZ23nCNsybBkvPiBZhmLmAJ5G633nCNsybBkvPiBZhmLmAxUS633nCNsybBkvPiBZhmDn3k0gvrOEkKAVaLpaeES3CMHPeAn34WVU9d+piw1s8C98Ow8yWnhEtwjBz7otIs7AaU0sMM1t6RrQIw8wlF+izT7b7/XdvzP7orz/v9882P3p6uT/i1a8Xd54QmHnTYOkZ0SIMMxd8I31TkLP9+MeozLO/rb95tE2BlkCv5qB/2dJzIaJbYSnaMHPBBXq9f+7G4PHV/rnvxz+53z/7z4P6R6POvN9/fY+dJ+yMeUuld6LmoA1q6bkM0e2wFG2YOW+BfrvPv+LR9qgmn16O480hz672PxyMfjT683r//T123iZpA/OWSPTngRvU0nMRoltiKdowc74C3fm0Xojpubf3uvR+pznAvDPpyaeXm3fro+p8dnXSrIs7b5+XeUtk3J8HbVBLzyWIboulaMPM2Qr0wXgdu+f3uPZ+PQ43l71THxXo08vn/vODfv+fbuzakgKVcWKmQA+k3dJzAaJbYynaMHOuAh1dgH/ub+uFlJd/FNLkAPPR9vQkaBDv6sfXkJqeHe204S6IOHZ8yrHcYQAOCz9aoDer+AiPW8MD0aULiuxToPHm/n6//973g//5pD95J0+ByqFAAdbAjxXozpVxbw6bdOmHyc0U6MJ9SvejMsfnSHdfS+ItvIzpO/gDngS19FyA6NZYijbMnOkt/LBAm3VEHmwtfw+/5xHo/e2zH8593188QqVAZXAOtFQsRRtmzlSgT86PnzuafjXPXgV6p79w8X3XESoFKoSr8IViKdowc7EFusdV+D8u9ueSc6QUqBDuAy0TS9GGmcst0PH9n3dmznE+u95/rTncHN9Vv+Q2JwpUCU8iFYmlaMPM5Rbo7ieRRk93fj/9elSckyKd2XlCYOYtGZ6FLxFL0YaZyy3QYTO+tvAs/J3Z60WPtuvbmB5/sOsaEgVaMJaeES3CMHO5BTp4PLMa06Pt4XHoeP26IfXB551mMaZdjyJRoOVi6RnRIgwzF1ygg8efDPvx3dHx5ahA7/fnCnTwuF4c9L3F408KtGQsPSNahGHmfAW6G1akb4lhZkvPiBZhmJkCDZg3DZaeES3CMHOuJ5E+vrgbPlSuJYaZLT0jWoRh5oJXpE/fecI2zJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLx1y17Pd1p6Lln0XliKNsxMgQbMW6fsucKIpeeCRe+JpWjDzBRowLx1yd5r3Fl6Llf03liKNsxMgQbMW4fss8qypediRe+DpWjDzBRowLx1x36f82HpuVTR+2Ep2jAzBRowb92x3yfNWXouVfR+WIo2zEyBBsxbd1CgBWAp2jAzBRowb91BgRaApWjDzBRowLx1B+dAC8BStGFmCjRg3jqEq/D5sRRtmJkCDZi3LuE+0OxYijbMTIEGzFun8CRSbixFG2amQAPmrVt4Fj4zlqINM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDNToAHzpsHSM6JFGGamQAPmTYOlZ0SLMMxMgQbMmwZLz4gWYZiZAg2YNw2WnhEtwjAzBRowbxosPSNahGFmCjRg3jRYeka0CMPMFGjAvGmw9IxoEYaZKdCAedNg6RnRIgwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLxpsPSMaBGGmSnQgHnTYOkZ0SIMM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDNToAHzpsHSM6JFGGamQAPmTYOlZ0SLMMxMgQbMmwZLz4gWYZiZAg2YNw2WnhEtwjAzBRowbxosPSNahGFmCjRg3jRYeka0CMPMFGjAvGmw9IxoEYaZKdCAedNg6RnRIgwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLxpsPSMaBGGmSnQgHnTYOkZ0SIMM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDNToAHzpsHSM6JFGGamQAPmTYOlZ0SLMMxMgQbMmwZLz4gWYZiZAg2YNw2WnhEtwjAzBRowbxosPSNahGFmCjRg3jRYeka0CMPMFGjAvGmw9IxoEYaZKdCAedNg6RnRIgwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYmQINmDcNlp4RLcIw86Es0LtwmDlWkzsEwBrhCFSBYeYOPPdO1PQ6CHNgjqZoPYaZD+URaMI2zJuG1T1Hf2ob9EiKzoBhZgo0YN40rOx53J8nNqteT1WiR1F0DgwzU6AB86ZhVc8nxgW62dvsyQ5Dj6DoLBhmpkAD5k3Dqp6n/dnrbcreyB9B0VkwzEyBBsybho4KtO7PUYFqGvQIis6CYWYKNGDeNHRToL2ZAk35/3ZbjqDoLBhmpkAD5k1DN+dAoz919zMdQdFZMMxMgQbMm4ZursJPD0Ap0D1goDVQoAHzpqGb+0A3p/1JgS6HgdZAgQbMm4ZunkQavn2f9CfnQJfCQGugQAPmTUMXnoeHn9W4P7kKvwcMtAYKNGDeNHTlWftA5xEWLcUwMwUaMG8aOvMsXVLkKItWYpiZAg2YNw3dea4vxPMs/J4w0Boo0IB502DpGdEiDDNToAHzpsHSM6JFGGamQAPmTYOlZ0SLMMxMgQbMmwZLz4gWYZiZAg2YNw2WnhEtwjAzBRowbxosPSNahGFmCjRg3jRYeka0CMPMFGjAvGmw9IxoEYaZKdCAedNg6RnRIgwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJuGHJ5Xf2oe0RoMM1OgAfOmIYPnDtZtQrQGw8wUaMC8adB77mLlUERrMMxMgQbMmwa553F/rtSgiNZgmJkCDZg3DWrPJ2YKNP3TkxCtwTAzBRowbxrUnqf9ucohKKI1GGamQAPmTUP+Ak25Jo9oDYaZKdCAedOQvUCTrskjWoNhZgo0YN405D4HmnZNHtEaDDNToAHzpiHzVfjEa/KI1mCYmQINmDcNee8DTb0mj2gNhpkp0IB505D3SaTUa/KI1mCYmQINmDcNeZ+Fp0DLxjAzBRowbxryeqZAy8YwMwUaMG8a8nrmHGjZGGamQAPmTUNmz1yFLxrDzBRowLxpyO2Z+0BLxjAzBRowbxqye+ZJpIIxzEyBBsybhvyeeRa+XAwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLxpsPSMaBGGmSnQgHnTYOkZ0SIMM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDNToAHzpsHS8wFFpyzVvDYsRRtmpkAD5k2DpeeDiU76sJC1YSnaMDMFGjBvGiw9H0j0zMfVlXAoainaMDMFGjBvGiw9H0T0zAcmF3EoainaMDMFGjBvGiw9H0D0iWmBVr2UT07uGkvRhpkp0IB502Dp+QCip/252dtM+uz5jrEUbZiZAg2YNw2WntsUaG+mQKeDqD8rainaMDMFGjBvGiw9tynQzd6kQKeHoBnOilqKNsxMgQbMmwZLz23OgQ4PQHuLBdpbLFQBlqINM1OgAfOmwdJzm6vw03fwk8LsLf5AgaVow8wUaMC8abD03OY+0F41rcsYxJkL9L2U0UzDUrRhZgo0YN40WHpu9STSruPN6Q+Uh6CWog0zU6AB86bB0nO7Z+EXz3hSoAfGMDMFGjBvGiw9txS9cM29fYF2cdOTpWjDzBRowLxpsPTcVvR8AbY+B9rJTU+Wog0zU6AB86bB0vOKoltehe/mpidL0YaZKdCAWhNFNwAACwJJREFUedNg6XlV0a0qsaObnixFG2amQAPmTYOl55VFt3hT3tVNT5aiDTNToAHzpsHS8+qiD35ZqKtr9paiDTNToAHzpsHSs1I0BeoFBRowbxosPdsV6PBw99ixLlOJMBwOCjSwfGEbZrb0rBTdxTnQ+l9x/HjuDxVJwHA4KNDA8oVtmNnSs1T06lfhR/+G48dzf6hIAobDQYEGli9sw8yWnrWiV70PNLYfFqjwuaeOMBwOCjSwfGEbZrb0LBa92pNIJ2YK9CCvhCI+Aq/BcDgo0MDyhW2Y2dKzWvRKx4TNAWxdoAepxRyLPe+J4XBQoIHlC9sws6VnK9HtCjTLYs974uS5gQINLF/YhpktPVuJblWgeRZ7Xk5971UJLd6Okgv02Sfb/f67N/b80ZLfx84T9mX5wjbMbOnZSnSrc6B51irdM4rhnQMFF+jTy/2aV7/e40dLft/sPGFnli9sw8yWnr1Et7kKX06Bxr1XuVO0Z/+BTj6b3UWBXu+fuzF4fLV/7vvlP1ry+2bnCTuzfGEbZrb0bCa6xX2gxRRo0/q5Y7Rn34FOv8OhgwJ9tD06tnx6+exvl/5oye/HO2+/M88XtmFmS89uog/+JFIp50BPzBRo7nOx7dhvoFe4w6GDAr3Tf7358/2lP1ry+/HO2+/M84VtmNnSs53ogz8LX8hV+PGVr+xBWrPPQK/itoMCvd7/cPTn/aYoF3+05PfjnbffmecL2zCzpefDLLqM+0APY4GudHS/eoE+u9q8NX+0PT7JOfejJb+f5L0LAAfj2PGaYyWEOF5ClM5Y6X8TBQrgwbGazBmOT9vm2PHMWbqinAId36g096Mlvx/DW/hysfSM6LVzCK/Cr3SHQ5Yj0MnOW+/Mbt4Cw8yWnhG9fg7ffaB+50AnO2+9M795G2GY2dIzogUcvieRuApfOoaZLT0jWsHhexY+932g78/9ufijJb8f77z9zgznbcDrWoZhaEvRhpl5Eilg3jRYeka0CMPM5T4L/+xq/7WFZ93nfrTk9+OdJwRm3jRYeka0CMPMBa/G9HhmtaVH26PjzNkfzX8zt/OEnTFvGiw9I1qEYeaCC3Tw+JNhP747Or5sCnT2RwvfzO48YV/MmwZLz4gWYZi55AJN3nnCNsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8wUaMC8abD0jGgRhpkp0IB502DpGdEiDDNToAHzpsHSM6JFGGamQAPmTYOlZ0SLMMxMgQbMmwZLz4gWYZiZAg2YNw2WnhEtwjAzBRowbxosPSNahGFmCjRg3jRYeka0CMPMFGjAvGmw9IxoEYaZKdCAedNg6RnRIgwzU6AB86bB0jOiRRhmpkAD5k2DpWdEizDMTIEGzJsGS8+IFmGYmQINmDcNlp4RLcIwMwUaMG8aLD0jWoRhZgo0YN40WHpGtAjDzBRowLxpsPSMaBGGmSnQgHnTYOkZ0SIMM1OgAfOmwdIzokUYZqZAA+ZNg6VnRIswzEyBBsybBkvPiBZhmJkCDZg3DZaeES3CMDMFGjBvGiw9I1qEYWYKNGDeNFh6RrQIw8yHskABAKyhQAEAEslYoCksBob1gGcRiNYg8kyBwgg8i0C0Bgo0YN404FkEojVQoAHzpgHPIhCtgQINmDcNeBaBaA0UaMC8acCzCERroEAD5k0DnkUgWgMFCgBQNhQoAEAiFCgAQCIUKABAIhQoAEAiFCgAQCIUKABAIhQoAEAiZRfos0+2+/13b+SOceh4evn15qs5w3t/Awn89ef9/tkfd4voFfnrB0PP//f7+EbtuegCfXq5X/Pq17mDHDau95sCnTO89zeQwB9HAvtnf1t/g+i1cSc8v/YjatfkuegCvd4/d2Pw+Gr/3Pe5kxwqnl3vjwt0zvDe30B77vfP/vOgNjh6ySJ6XTzaHnn+IEZa7rnkAn20PZq9p5fjP+LQDfU7nqZA5wzv/Q2059nV/of1n8MDnw8RvUau99+v/wiPes8lF+id5mV+JxRBJwzf8bz33xOzM4b3/gba8/Ry82bx+v5uEd0N4VvvueQCvR7/DR++GXr9R/4mHJw7r/3bxOic4b2/gRUYFSii182j7fq9ud5zwQX67GpztB1uoDuaKZozvPc3mUIeDkbvGRG9bv57uy7IDJ4p0KMIBSpj9NYR0evler9/9t8GFOg8M/+bucejW3YX6Ktf7/1NppCHgvuj25gQvVae/ev/2e6f/X9ZPHsUKP9x7haOQEXc3z5bn3pD9Nr5a/0eniPQWZittUGBarjT3EaP6PVzv7+f2qNYoFygXBtchZfwx/74pkNEr51RM3IVfpbxLVvcItc19xduimvulNvrG0jh2fXm8cIBotfH+IGFKFC955ILlIc01sW4QHlAZo1cn3lqENFr4/rk3dTrPIk0z/A/Lq/xmPA6GBfonOG9v4EE7syqQ/TaeLTdf+/7wbM/Nrc7qD2XXKCDxyxUsx4mJ4LmDO/9DbSmWfyn36w7gOi1cb9Z9Wr0Tl7uuegCHTz+ZPg/+V3+09w10zPpc4b3/gbacn/Sn+Ea0Wvj8ey6q2rPZRcoAEDBUKAAAIlQoAAAiVCgAACJUKAAAIlQoAAAiVCgAACJUKAAAIlQoAAAiVCgAACJUKAAAIlQoAAAiVCgAACJUKBQHteqWX7y1ehHL3yX/q9L3xZgPyhQKI+uCvSbv/lukLotwAGgQKE8OirQ8TYUKKwLChTKY0njrVKgAOuCAoXyoEDBBAoUyoMCBRMoUCiP/Qr0h4+2qmrj9Jfxw9H50cFg50r8+i/1L6uTl+qvb8YZ1Ff22Hbw5Hz1ys7nL1XVc5eoWUiEAoXy2KdAb44vLZ0ZfnOvqt4Z/fbBVl2UO5+Of/n8V8sKdLztxs/q74YF+r/emP51gAQoUCiPuavwG7+JH73QHFbWB5APPx016LADXxxtcHP0t4a/PDP8Sz8Ma/HFmW1mtn3+D8Oj1DeidocbD6v0u8EPV0YtC5AABQrlsWeBDo80ozGbymyqMd7BT+p0+MXox/MFOv5p/bfrd/51gb4zGEzf/wO0hgKF8tizQG+OT3rWrfdi/R5+9Nthr74z+WbSkAsFenP86+YN/6RQp6dSAVpCgUJ57HUONFpz5gfDEqwPIm8uNOC1ZQU6rck4VJ0csO7aHOCgUKBQHnsVaP2ue/4JpWvzVTgYPPzLFx+/VC0p0Jk36pN3/M2pTwoUUqFAoTwOXqD36n9O3rt/89LSxz/3PHqlQGFFKFAoj30K9MX5Hz85P+zO6aWk+ibQi7/8dtlbeI5AYQ1QoFAe+5wDXfzFteqVcRM2dzENDn4OlAKFFaFAoTz2vJH+2uRK+rhL71UvfBM/nLbrsBqXXoVv7rqv779/hQKFLqBAoTz2LNAHW+PfjB9CenL+J/873tdPC/TmsnOgy+4DpUBhRShQKI/59UBHPTfzNNGvhx34WTW9iXN8ZNm8ha+fNIpj0vrOz51vlz2JVP8bKVBYHQoUymPvAp0+Cz8+Rr1XjevvSfNke3X6s+jUe/U3L+7zLDwFCitCgUJ57FOggx8+qu9VevnX47877cHBaG2ljdN/mFyt/2ZrWKDfLa7GdObbhQ0pUEiFAgUASIQCBQBIhAIFAEiEAgUASIQCBQBIhAIFAEiEAgUASIQCBQBIhAIFAEiEAgUASIQCBQBIhAIFAEiEAgUASIQCBQBIhAIFAEiEAgUASIQCBQBIhAIFAEiEAgUASIQCBQBI5P8DvOGw1awOqH8AAAAASUVORK5CYII=" width="672" /></p>
+<div id="ds-dataTip" markdown="1">
+<p><i class="fa fa-star"></i> <strong>Data Tip:</strong> An occupancy
+model with a linear effect will produce a curved (sigmoidal) prediction
+line when plotting probability. This is because technically the model is
+linear on the <em>logit</em> (log-odds) scale, and transforming log-odds
+back to probabilities creates a non-linear curve.</p>
+</div>
 </div>
 </div>
 </div>
@@ -1656,7 +1658,7 @@ point-count surveys at a site within a year. Although each survey lasts
 six minutes, the number of surveys conducted can vary among site–year
 combinations due to differences in sampling design (e.g., large
 vs. small sites) and the number of plots sampled at each site. Greater
-survey effort may provide more opportunities to detect a species if it
+survey effort could provide more opportunities to detect a species if it
 is present.</p>
 <div id="create-a-survey-covariate-table" class="section level4">
 <h4>Create a survey covariate table</h4>
@@ -1845,16 +1847,15 @@ be used to build detection histories and fit a single-species,
 single-season occupancy model. We estimated occupancy and detection
 probabilities, incorporated both site-level and survey-level covariates
 and examined ways to test model performance.</p>
-<p>While this tutorial focused on a relatively simple model, occupancy
-modeling can be extended in several ways. For example,
+<p>While this tutorial focused on a relatively simple, but powerful,
+model, occupancy modeling can be extended in several ways. For example,
 <strong>multi-season occupancy models</strong> allow occupancy
-probability to change over time (whereas we assumed it was constant
-here), enabling researchers to estimate local colonization and
-extinction rates and their predictors for a species.
-<strong>Multi-species occupancy models</strong> can also be used to
-analyze patterns across entire communities at a location, allowing
-researchers to examine how species traits influence occupancy and
-detection probabilities.</p>
+probability to change over time (we assumed it was constant here),
+enabling researchers to estimate local colonization and extinction rates
+and their predictors for a species. <strong>Multi-species occupancy
+models</strong> can also be used to analyze patterns across entire
+communities at a location, allowing researchers to examine how species
+traits influence occupancy and detection probabilities.</p>
 </div>
 
 

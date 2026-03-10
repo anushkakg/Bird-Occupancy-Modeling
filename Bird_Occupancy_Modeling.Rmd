@@ -1,6 +1,8 @@
 ---
+syncID:
 title: "Estimating Bird Occupancy and Detection Using NEON Observational Data"
-description: "Use NEON breeding landbird data and the RPresence package to build detection histories, fit occupancy models, and incorporate environmental and survey covariates."
+description: "Use NEON breeding landbird data and the RPresence package to build detection histories, fit occupancy models, and incorporate site and survey covariates."
+dateCreated: "`r Sys.Date()`"
 authors: Anushka Gupta
 contributors: Chandra Earl
 estimatedTime: 
@@ -16,7 +18,7 @@ urlTitle:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-This tutorial explores the use of NEON breeding landbird data for occupancy modeling. The focus is on building detection histories from observational data, fitting a simple occupancy model, and testing how environmental and survey conditions may influence occupancy and detection.
+This tutorial explores the use of NEON breeding landbird data for occupancy modeling. The focus is on building detection histories from observational data, fitting a simple occupancy model, and testing how site and survey conditions may influence occupancy and detection.
 
 Although birds are used here, the same workflow could be applied to other <a href="https://www.neonscience.org/data-collection/observation-types" target="_blank">observational sampling datasets</a> that provide species-level detections, such as <a href="https://www.neonscience.org/data-collection/small-mammals" target="_blank">small mammals</a> or <a href="https://www.neonscience.org/data-collection/fish" target="_blank">fish</a>. Environmental covariates for these models can also be drawn from other NEON data products, such as weather and climate measurements collected by <a href="https://www.neonscience.org/data-collection/automated-instruments" target="_blank">NEON's Automated Instrument Systems</a>.
 <div id="ds-objectives" markdown="1">
@@ -724,6 +726,10 @@ ggplot(data, aes(x = elevation, y = est)) +
   scale_y_continuous(limits = c(0, 1)) +
   theme_bw()
 ```
+
+<div id="ds-dataTip" markdown="1">
+<i class="fa fa-star"></i> **Data Tip:** An occupancy model with a linear effect will produce a curved (sigmoidal) prediction line when plotting probability. This is because technically the model is linear on the *logit* (log-odds) scale, and transforming log-odds back to probabilities  creates a non-linear curve.
+</div> 
 
 ### Survey Covariates
 

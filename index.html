@@ -602,106 +602,55 @@ weather conditions for each point-count survey.</p>
 ##  $ measuredBy                : chr  &quot;JRUEB&quot; &quot;JRUEB&quot; &quot;JRUEB&quot; &quot;JRUEB&quot; ...
 ##  $ publicationDate           : chr  &quot;20260106T223419Z&quot; &quot;20260106T223419Z&quot; &quot;20260106T223419Z&quot; &quot;20260106T223419Z&quot; ...
 ##  $ release                   : chr  &quot;RELEASE-2026&quot; &quot;RELEASE-2026&quot; &quot;RELEASE-2026&quot; &quot;RELEASE-2026&quot; ...</code></pre>
-<pre class="r"><code>head(bird.counts$brd_perpoint, n=10)</code></pre>
-<pre><code>##                                     uid         namedLocation domainID siteID
-## 1  30d14ecc-65a8-4e73-bcb3-d5132c153da2 BART_025.birdGrid.brd      D01   BART
-## 2  f97b6fa3-5719-4c0d-9922-1b23ec949911 BART_025.birdGrid.brd      D01   BART
-## 3  6fdac273-77b0-4e30-86d1-f6ff94f92e66 BART_025.birdGrid.brd      D01   BART
-## 4  ff9f059e-46fa-471a-a41d-2ac759881ff0 BART_025.birdGrid.brd      D01   BART
-## 5  e3f73906-fe6f-4f88-a05e-067a567d6516 BART_025.birdGrid.brd      D01   BART
-## 6  93a4a487-1379-41cb-be86-286ca07aded4 BART_025.birdGrid.brd      D01   BART
-## 7  3af86836-a2ec-478a-aec7-495f78a6be65 BART_025.birdGrid.brd      D01   BART
-## 8  5212cc52-7254-4074-8c87-f104502845b6 BART_082.birdGrid.brd      D01   BART
-## 9  81cfe589-c1be-4321-a94c-c6f74cc33a7f BART_082.birdGrid.brd      D01   BART
-## 10 7b827ba2-cc74-4811-84f2-4eb3ad3ec7ca BART_082.birdGrid.brd      D01   BART
-##      plotID    plotType pointID       nlcdClass decimalLatitude
-## 1  BART_025 distributed       3 evergreenForest        44.06015
-## 2  BART_025 distributed       2 evergreenForest        44.06015
-## 3  BART_025 distributed       1 evergreenForest        44.06015
-## 4  BART_025 distributed       4 evergreenForest        44.06015
-## 5  BART_025 distributed       5 evergreenForest        44.06015
-## 6  BART_025 distributed       6 evergreenForest        44.06015
-## 7  BART_025 distributed       9 evergreenForest        44.06015
-## 8  BART_082 distributed       5 evergreenForest        44.05670
-## 9  BART_082 distributed       8 evergreenForest        44.05670
-## 10 BART_082 distributed       7 evergreenForest        44.05670
-##    decimalLongitude geodeticDatum coordinateUncertainty elevation
-## 1         -71.31548         WGS84                 250.3     575.8
-## 2         -71.31548         WGS84                 250.3     575.8
-## 3         -71.31548         WGS84                 250.3     575.8
-## 4         -71.31548         WGS84                 250.3     575.8
-## 5         -71.31548         WGS84                 250.3     575.8
-## 6         -71.31548         WGS84                 250.3     575.8
-## 7         -71.31548         WGS84                 250.3     575.8
-## 8         -71.28716         WGS84                 250.5     292.7
-## 9         -71.28716         WGS84                 250.5     292.7
-## 10        -71.28716         WGS84                 250.5     292.7
-##    elevationUncertainty           startDate boutNumber
-## 1                   0.3 2015-06-14 09:23:00          1
-## 2                   0.3 2015-06-14 09:43:00          1
-## 3                   0.3 2015-06-14 10:31:00          1
-## 4                   0.3 2015-06-14 11:24:00          1
-## 5                   0.3 2015-06-14 12:20:00          1
-## 6                   0.3 2015-06-14 13:04:00          1
-## 7                   0.3 2015-06-14 13:30:00          1
-## 8                   0.8 2015-06-16 09:02:00          1
-## 9                   0.8 2015-06-16 09:20:00          1
-## 10                  0.8 2015-06-16 09:33:00          1
-##    samplingImpracticalRemarks samplingImpractical         eventID
-## 1                        &lt;NA&gt;                  OK BRD.BART.2015.1
-## 2                        &lt;NA&gt;                  OK BRD.BART.2015.1
-## 3                        &lt;NA&gt;                  OK BRD.BART.2015.1
-## 4                        &lt;NA&gt;                  OK BRD.BART.2015.1
-## 5                        &lt;NA&gt;                  OK BRD.BART.2015.1
-## 6                        &lt;NA&gt;                  OK BRD.BART.2015.1
-## 7                        &lt;NA&gt;                  OK BRD.BART.2015.1
-## 8                        &lt;NA&gt;                  OK BRD.BART.2015.1
-## 9                        &lt;NA&gt;                  OK BRD.BART.2015.1
-## 10                       &lt;NA&gt;                  OK BRD.BART.2015.1
-##    startCloudCoverPercentage endCloudCoverPercentage startRH endRH
-## 1                         20                      40      72    56
-## 2                         20                      40      72    56
-## 3                         20                      40      72    56
-## 4                         20                      40      72    56
-## 5                         20                      40      72    56
-## 6                         20                      40      72    56
-## 7                         20                      40      72    56
-## 8                        100                     100      93    85
-## 9                        100                     100      93    85
-## 10                       100                     100      93    85
-##                     observedHabitat observedAirTemp kmPerHourObservedWindSpeed
-## 1                  evergreen forest              18                          1
-## 2                  deciduous forest              19                          3
-## 3  mixed deciduous/evergreen forest              17                          0
-## 4                  deciduous forest              19                          0
-## 5                  deciduous forest              16                          0
-## 6                  deciduous forest              18                          0
-## 7  mixed deciduous/evergreen forest              18                          1
-## 8                  evergreen forest              13                          0
-## 9  mixed deciduous/evergreen forest              13                          0
-## 10                 evergreen forest              14                          0
-##                     laboratoryName samplingProtocolVersion     remarks
-## 1  Bird Conservancy of the Rockies       NEON.DOC.014041vG        &lt;NA&gt;
-## 2  Bird Conservancy of the Rockies       NEON.DOC.014041vG        &lt;NA&gt;
-## 3  Bird Conservancy of the Rockies       NEON.DOC.014041vG        &lt;NA&gt;
-## 4  Bird Conservancy of the Rockies       NEON.DOC.014041vG        &lt;NA&gt;
-## 5  Bird Conservancy of the Rockies       NEON.DOC.014041vG        &lt;NA&gt;
-## 6  Bird Conservancy of the Rockies       NEON.DOC.014041vG        &lt;NA&gt;
-## 7  Bird Conservancy of the Rockies       NEON.DOC.014041vG        &lt;NA&gt;
-## 8  Bird Conservancy of the Rockies       NEON.DOC.014041vG all flagged
-## 9  Bird Conservancy of the Rockies       NEON.DOC.014041vG all flagged
-## 10 Bird Conservancy of the Rockies       NEON.DOC.014041vG all flagged
-##    measuredBy  publicationDate      release
-## 1       JRUEB 20260106T223419Z RELEASE-2026
-## 2       JRUEB 20260106T223419Z RELEASE-2026
-## 3       JRUEB 20260106T223419Z RELEASE-2026
-## 4       JRUEB 20260106T223419Z RELEASE-2026
-## 5       JRUEB 20260106T223419Z RELEASE-2026
-## 6       JRUEB 20260106T223419Z RELEASE-2026
-## 7       JRUEB 20260106T223419Z RELEASE-2026
-## 8       JRUEB 20260106T223419Z RELEASE-2026
-## 9       JRUEB 20260106T223419Z RELEASE-2026
-## 10      JRUEB 20260106T223419Z RELEASE-2026</code></pre>
+<pre class="r"><code>head(bird.counts$brd_perpoint, n=5)</code></pre>
+<pre><code>##                                    uid         namedLocation domainID siteID
+## 1 30d14ecc-65a8-4e73-bcb3-d5132c153da2 BART_025.birdGrid.brd      D01   BART
+## 2 f97b6fa3-5719-4c0d-9922-1b23ec949911 BART_025.birdGrid.brd      D01   BART
+## 3 6fdac273-77b0-4e30-86d1-f6ff94f92e66 BART_025.birdGrid.brd      D01   BART
+## 4 ff9f059e-46fa-471a-a41d-2ac759881ff0 BART_025.birdGrid.brd      D01   BART
+## 5 e3f73906-fe6f-4f88-a05e-067a567d6516 BART_025.birdGrid.brd      D01   BART
+##     plotID    plotType pointID       nlcdClass decimalLatitude decimalLongitude
+## 1 BART_025 distributed       3 evergreenForest        44.06015        -71.31548
+## 2 BART_025 distributed       2 evergreenForest        44.06015        -71.31548
+## 3 BART_025 distributed       1 evergreenForest        44.06015        -71.31548
+## 4 BART_025 distributed       4 evergreenForest        44.06015        -71.31548
+## 5 BART_025 distributed       5 evergreenForest        44.06015        -71.31548
+##   geodeticDatum coordinateUncertainty elevation elevationUncertainty
+## 1         WGS84                 250.3     575.8                  0.3
+## 2         WGS84                 250.3     575.8                  0.3
+## 3         WGS84                 250.3     575.8                  0.3
+## 4         WGS84                 250.3     575.8                  0.3
+## 5         WGS84                 250.3     575.8                  0.3
+##             startDate boutNumber samplingImpracticalRemarks samplingImpractical
+## 1 2015-06-14 09:23:00          1                       &lt;NA&gt;                  OK
+## 2 2015-06-14 09:43:00          1                       &lt;NA&gt;                  OK
+## 3 2015-06-14 10:31:00          1                       &lt;NA&gt;                  OK
+## 4 2015-06-14 11:24:00          1                       &lt;NA&gt;                  OK
+## 5 2015-06-14 12:20:00          1                       &lt;NA&gt;                  OK
+##           eventID startCloudCoverPercentage endCloudCoverPercentage startRH
+## 1 BRD.BART.2015.1                        20                      40      72
+## 2 BRD.BART.2015.1                        20                      40      72
+## 3 BRD.BART.2015.1                        20                      40      72
+## 4 BRD.BART.2015.1                        20                      40      72
+## 5 BRD.BART.2015.1                        20                      40      72
+##   endRH                  observedHabitat observedAirTemp
+## 1    56                 evergreen forest              18
+## 2    56                 deciduous forest              19
+## 3    56 mixed deciduous/evergreen forest              17
+## 4    56                 deciduous forest              19
+## 5    56                 deciduous forest              16
+##   kmPerHourObservedWindSpeed                  laboratoryName
+## 1                          1 Bird Conservancy of the Rockies
+## 2                          3 Bird Conservancy of the Rockies
+## 3                          0 Bird Conservancy of the Rockies
+## 4                          0 Bird Conservancy of the Rockies
+## 5                          0 Bird Conservancy of the Rockies
+##   samplingProtocolVersion remarks measuredBy  publicationDate      release
+## 1       NEON.DOC.014041vG    &lt;NA&gt;      JRUEB 20260106T223419Z RELEASE-2026
+## 2       NEON.DOC.014041vG    &lt;NA&gt;      JRUEB 20260106T223419Z RELEASE-2026
+## 3       NEON.DOC.014041vG    &lt;NA&gt;      JRUEB 20260106T223419Z RELEASE-2026
+## 4       NEON.DOC.014041vG    &lt;NA&gt;      JRUEB 20260106T223419Z RELEASE-2026
+## 5       NEON.DOC.014041vG    &lt;NA&gt;      JRUEB 20260106T223419Z RELEASE-2026</code></pre>
 <p><code>brd_countdata</code> contains data for the birds observed
 during each point-count survey, including identification, observation
 method, distance, and observed minute.</p>
@@ -733,73 +682,43 @@ method, distance, and observed minute.</p>
 ##  $ identificationHistoryID: chr  NA NA NA NA ...
 ##  $ publicationDate        : chr  &quot;20260106T223419Z&quot; &quot;20260106T223419Z&quot; &quot;20260106T223419Z&quot; &quot;20260106T223419Z&quot; ...
 ##  $ release                : chr  &quot;RELEASE-2026&quot; &quot;RELEASE-2026&quot; &quot;RELEASE-2026&quot; &quot;RELEASE-2026&quot; ...</code></pre>
-<pre class="r"><code>head(bird.counts$brd_countdata, n=10)</code></pre>
-<pre><code>##                                     uid         namedLocation domainID siteID
-## 1  08b95360-854d-4d74-a276-93fc7d2423ca BART_025.birdGrid.brd      D01   BART
-## 2  f2d2d4ce-c978-46a5-befb-4d3b749b1cdb BART_025.birdGrid.brd      D01   BART
-## 3  754c7b57-1892-4f1f-9f49-594c40d47bfa BART_025.birdGrid.brd      D01   BART
-## 4  6212a830-6d2d-4999-b169-19273526790e BART_025.birdGrid.brd      D01   BART
-## 5  192585ee-0a3d-4994-856f-3da8090a37c3 BART_025.birdGrid.brd      D01   BART
-## 6  91324dd0-58b5-4873-9244-b51c932891e1 BART_025.birdGrid.brd      D01   BART
-## 7  6d282096-fc76-4302-a1d8-8f5ff113d4bd BART_025.birdGrid.brd      D01   BART
-## 8  bdc1e8d9-1dd3-4cf1-8593-822622df9b22 BART_025.birdGrid.brd      D01   BART
-## 9  acce3970-c27e-4f60-92c0-96a53e785ead BART_025.birdGrid.brd      D01   BART
-## 10 53541100-acd4-45e4-85e5-46b476535e46 BART_025.birdGrid.brd      D01   BART
-##      plotID    plotType pointID           startDate boutNumber         eventID
-## 1  BART_025 distributed       3 2015-06-14 09:23:00          1 BRD.BART.2015.1
-## 2  BART_025 distributed       3 2015-06-14 09:23:00          1 BRD.BART.2015.1
-## 3  BART_025 distributed       3 2015-06-14 09:23:00          1 BRD.BART.2015.1
-## 4  BART_025 distributed       3 2015-06-14 09:23:00          1 BRD.BART.2015.1
-## 5  BART_025 distributed       3 2015-06-14 09:23:00          1 BRD.BART.2015.1
-## 6  BART_025 distributed       2 2015-06-14 09:43:00          1 BRD.BART.2015.1
-## 7  BART_025 distributed       2 2015-06-14 09:43:00          1 BRD.BART.2015.1
-## 8  BART_025 distributed       2 2015-06-14 09:43:00          1 BRD.BART.2015.1
-## 9  BART_025 distributed       2 2015-06-14 09:43:00          1 BRD.BART.2015.1
-## 10 BART_025 distributed       1 2015-06-14 10:31:00          1 BRD.BART.2015.1
-##    pointCountMinute targetTaxaPresent taxonID       scientificName taxonRank
-## 1                 1                 Y    REVI      Vireo olivaceus   species
-## 2                 1                 Y    BTNW     Setophaga virens   species
-## 3                 2                 Y    BTNW     Setophaga virens   species
-## 4                 2                 Y    BAWW      Mniotilta varia   species
-## 5                 1                 Y    BCCH Poecile atricapillus   species
-## 6                 3                 Y    BAWW      Mniotilta varia   species
-## 7                 4                 Y    WIWR Troglodytes hiemalis   species
-## 8                 1                 Y    WIWR Troglodytes hiemalis   species
-## 9                 1                 Y    BTNW     Setophaga virens   species
-## 10                6                 Y    WBNU   Sitta carolinensis   species
-##                  vernacularName observerDistance detectionMethod
-## 1                Red-eyed Vireo                9         singing
-## 2  Black-throated Green Warbler               12         singing
-## 3  Black-throated Green Warbler               50         singing
-## 4       Black-and-white Warbler               17         singing
-## 5        Black-capped Chickadee               42         singing
-## 6       Black-and-white Warbler               27         singing
-## 7                   Winter Wren               62         singing
-## 8                   Winter Wren               26         singing
-## 9  Black-throated Green Warbler               21         singing
-## 10      White-breasted Nuthatch               46         calling
-##    visualConfirmation sexOrAge clusterSize clusterCode identifiedBy
-## 1                  No     Male           1        &lt;NA&gt;        JRUEB
-## 2                  No     Male           1        &lt;NA&gt;        JRUEB
-## 3                  No     Male           1        &lt;NA&gt;        JRUEB
-## 4                  No     Male           1        &lt;NA&gt;        JRUEB
-## 5                  No     Male           1        &lt;NA&gt;        JRUEB
-## 6                  No     Male           1        &lt;NA&gt;        JRUEB
-## 7                  No     Male           1        &lt;NA&gt;        JRUEB
-## 8                  No     Male           1        &lt;NA&gt;        JRUEB
-## 9                  No     Male           1        &lt;NA&gt;        JRUEB
-## 10                 No  Unknown           1        &lt;NA&gt;        JRUEB
-##    identificationHistoryID  publicationDate      release
-## 1                     &lt;NA&gt; 20260106T223419Z RELEASE-2026
-## 2                     &lt;NA&gt; 20260106T223419Z RELEASE-2026
-## 3                     &lt;NA&gt; 20260106T223419Z RELEASE-2026
-## 4                     &lt;NA&gt; 20260106T223419Z RELEASE-2026
-## 5                     &lt;NA&gt; 20260106T223419Z RELEASE-2026
-## 6                     &lt;NA&gt; 20260106T223419Z RELEASE-2026
-## 7                     &lt;NA&gt; 20260106T223419Z RELEASE-2026
-## 8                     &lt;NA&gt; 20260106T223419Z RELEASE-2026
-## 9                     &lt;NA&gt; 20260106T223419Z RELEASE-2026
-## 10                    &lt;NA&gt; 20260106T223419Z RELEASE-2026</code></pre>
+<pre class="r"><code>head(bird.counts$brd_countdata, n=5)</code></pre>
+<pre><code>##                                    uid         namedLocation domainID siteID
+## 1 08b95360-854d-4d74-a276-93fc7d2423ca BART_025.birdGrid.brd      D01   BART
+## 2 f2d2d4ce-c978-46a5-befb-4d3b749b1cdb BART_025.birdGrid.brd      D01   BART
+## 3 754c7b57-1892-4f1f-9f49-594c40d47bfa BART_025.birdGrid.brd      D01   BART
+## 4 6212a830-6d2d-4999-b169-19273526790e BART_025.birdGrid.brd      D01   BART
+## 5 192585ee-0a3d-4994-856f-3da8090a37c3 BART_025.birdGrid.brd      D01   BART
+##     plotID    plotType pointID           startDate boutNumber         eventID
+## 1 BART_025 distributed       3 2015-06-14 09:23:00          1 BRD.BART.2015.1
+## 2 BART_025 distributed       3 2015-06-14 09:23:00          1 BRD.BART.2015.1
+## 3 BART_025 distributed       3 2015-06-14 09:23:00          1 BRD.BART.2015.1
+## 4 BART_025 distributed       3 2015-06-14 09:23:00          1 BRD.BART.2015.1
+## 5 BART_025 distributed       3 2015-06-14 09:23:00          1 BRD.BART.2015.1
+##   pointCountMinute targetTaxaPresent taxonID       scientificName taxonRank
+## 1                1                 Y    REVI      Vireo olivaceus   species
+## 2                1                 Y    BTNW     Setophaga virens   species
+## 3                2                 Y    BTNW     Setophaga virens   species
+## 4                2                 Y    BAWW      Mniotilta varia   species
+## 5                1                 Y    BCCH Poecile atricapillus   species
+##                 vernacularName observerDistance detectionMethod
+## 1               Red-eyed Vireo                9         singing
+## 2 Black-throated Green Warbler               12         singing
+## 3 Black-throated Green Warbler               50         singing
+## 4      Black-and-white Warbler               17         singing
+## 5       Black-capped Chickadee               42         singing
+##   visualConfirmation sexOrAge clusterSize clusterCode identifiedBy
+## 1                 No     Male           1        &lt;NA&gt;        JRUEB
+## 2                 No     Male           1        &lt;NA&gt;        JRUEB
+## 3                 No     Male           1        &lt;NA&gt;        JRUEB
+## 4                 No     Male           1        &lt;NA&gt;        JRUEB
+## 5                 No     Male           1        &lt;NA&gt;        JRUEB
+##   identificationHistoryID  publicationDate      release
+## 1                    &lt;NA&gt; 20260106T223419Z RELEASE-2026
+## 2                    &lt;NA&gt; 20260106T223419Z RELEASE-2026
+## 3                    &lt;NA&gt; 20260106T223419Z RELEASE-2026
+## 4                    &lt;NA&gt; 20260106T223419Z RELEASE-2026
+## 5                    &lt;NA&gt; 20260106T223419Z RELEASE-2026</code></pre>
 <p>Before we can build detection histories and fit an occupancy model,
 we need to clean the data a bit. This includes:</p>
 <ul>
@@ -852,24 +771,6 @@ species level. Records that are not identified to species (or have
 <pre class="r"><code>brd_countdata_clean &lt;- brd_countdata_clean %&gt;%
   filter(taxonRank == &quot;species&quot;)</code></pre>
 </div>
-<div id="remove-duplicate-surveys" class="section level3">
-<h3>Remove duplicate surveys</h3>
-<p>Each <code>pointSurveyID</code> should correspond to a single
-point-count survey. Occasionally, duplicate IDs appear, likely due to
-data entry or processing issues. We identify any duplicated
-<code>pointSurveyID</code> values and remove those surveys from both
-tables.</p>
-<pre class="r"><code>duplicate_pointSurveyID &lt;- brd_perpoint_clean %&gt;%
-  count(pointSurveyID) %&gt;%
-  filter(n &gt; 1) %&gt;%
-  pull(pointSurveyID)
-
-brd_perpoint_clean &lt;- brd_perpoint_clean %&gt;%
-  filter(!pointSurveyID %in% duplicate_pointSurveyID)
-
-brd_countdata_clean &lt;- brd_countdata_clean %&gt;%
-  filter(!pointSurveyID %in% duplicate_pointSurveyID)</code></pre>
-</div>
 <div id="join-per-point-and-count-tables" class="section level3">
 <h3>Join per-point and count tables</h3>
 <p>Finally, we join the cleaned detection data
@@ -890,139 +791,79 @@ brd_joineddata_clean &lt;- brd_joineddata_clean %&gt;%
   select(-matches(&quot;\\.perpoint$&quot;))
 names(brd_joineddata_clean) &lt;- gsub(&quot;\\.count$&quot;, &quot;&quot;, names(brd_joineddata_clean))
 
-head(brd_joineddata_clean, n=10)</code></pre>
-<pre><code>##                                     uid         namedLocation domainID siteID
-## 1  28587fd5-e9c6-4dd9-ac2f-2a80d9d69ec2 BART_018.birdGrid.brd      D01   BART
-## 2  09f4496e-72c5-42ff-a4bf-aadcbf739397 BART_018.birdGrid.brd      D01   BART
-## 3  8721c42a-1e64-4c60-a40f-26b41ec3f51a BART_018.birdGrid.brd      D01   BART
-## 4  8ea10abd-5835-4fda-b592-ba3533c3311a BART_018.birdGrid.brd      D01   BART
-## 5  39915ebd-b013-4681-9903-9debb0ab7166 BART_018.birdGrid.brd      D01   BART
-## 6  0d6d00c8-9401-400c-afef-813edad380dd BART_018.birdGrid.brd      D01   BART
-## 7  d8a29e39-89fe-4db0-98b6-4251603b6c8e BART_018.birdGrid.brd      D01   BART
-## 8  3de966a7-9ff8-47c2-a0fc-b3f50658c8ff BART_018.birdGrid.brd      D01   BART
-## 9  bb9efaf3-f6db-4754-adc0-4ceafd86997c BART_018.birdGrid.brd      D01   BART
-## 10 4f029ed3-acbf-46ad-801d-04a68b5cec28 BART_018.birdGrid.brd      D01   BART
-##      plotID    plotType pointID           startDate boutNumber         eventID
-## 1  BART_018 distributed       1 2017-06-21 09:03:00          1 BRD.BART.2017.1
-## 2  BART_018 distributed       1 2017-06-21 09:03:00          1 BRD.BART.2017.1
-## 3  BART_018 distributed       1 2017-06-21 09:03:00          1 BRD.BART.2017.1
-## 4  BART_018 distributed       1 2017-06-21 09:03:00          1 BRD.BART.2017.1
-## 5  BART_018 distributed       1 2017-06-21 09:03:00          1 BRD.BART.2017.1
-## 6  BART_018 distributed       1 2017-06-21 09:03:00          1 BRD.BART.2017.1
-## 7  BART_018 distributed       2 2017-06-21 09:22:00          1 BRD.BART.2017.1
-## 8  BART_018 distributed       2 2017-06-21 09:22:00          1 BRD.BART.2017.1
-## 9  BART_018 distributed       2 2017-06-21 09:22:00          1 BRD.BART.2017.1
-## 10 BART_018 distributed       2 2017-06-21 09:22:00          1 BRD.BART.2017.1
-##    pointCountMinute targetTaxaPresent taxonID       scientificName taxonRank
-## 1                 1                 Y    BTNW     Setophaga virens   species
-## 2                 2                 Y    RBWO Melanerpes carolinus   species
-## 3                 1                 Y    REVI      Vireo olivaceus   species
-## 4                 1                 Y    OVEN  Seiurus aurocapilla   species
-## 5                 1                 Y    HETH    Catharus guttatus   species
-## 6                 1                 Y    REVI      Vireo olivaceus   species
-## 7                 6                 Y    HETH    Catharus guttatus   species
-## 8                 1                 Y    OVEN  Seiurus aurocapilla   species
-## 9                 1                 Y    REVI      Vireo olivaceus   species
-## 10                1                 Y    REVI      Vireo olivaceus   species
-##                  vernacularName observerDistance detectionMethod
-## 1  Black-throated Green Warbler               40         singing
-## 2        Red-bellied Woodpecker               20         calling
-## 3                Red-eyed Vireo               45         singing
-## 4                      Ovenbird               40         singing
-## 5                 Hermit Thrush               50         singing
-## 6                Red-eyed Vireo               35         singing
-## 7                 Hermit Thrush               60         singing
-## 8                      Ovenbird               30         singing
-## 9                Red-eyed Vireo               25         singing
-## 10               Red-eyed Vireo               35         singing
-##    visualConfirmation sexOrAge clusterSize clusterCode identifiedBy
-## 1                  No     Male           1        &lt;NA&gt;        JRUEB
-## 2                  No  Unknown           1        &lt;NA&gt;        JRUEB
-## 3                  No     Male           1        &lt;NA&gt;        JRUEB
-## 4                  No     Male           1        &lt;NA&gt;        JRUEB
-## 5                  No     Male           1        &lt;NA&gt;        JRUEB
-## 6                  No     Male           1        &lt;NA&gt;        JRUEB
-## 7                  No     Male           1        &lt;NA&gt;        JRUEB
-## 8                  No     Male           1        &lt;NA&gt;        JRUEB
-## 9                  No     Male           1        &lt;NA&gt;        JRUEB
-## 10                 No     Male           1        &lt;NA&gt;        JRUEB
-##    identificationHistoryID  publicationDate      release year
-## 1                     &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
-## 2                     &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
-## 3                     &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
-## 4                     &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
-## 5                     &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
-## 6                     &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
-## 7                     &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
-## 8                     &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
-## 9                     &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
-## 10                    &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
-##                   pointSurveyID   nlcdClass decimalLatitude decimalLongitude
-## 1  BART_018_point_1_2017_bout_1 mixedForest        44.05997         -71.2779
-## 2  BART_018_point_1_2017_bout_1 mixedForest        44.05997         -71.2779
-## 3  BART_018_point_1_2017_bout_1 mixedForest        44.05997         -71.2779
-## 4  BART_018_point_1_2017_bout_1 mixedForest        44.05997         -71.2779
-## 5  BART_018_point_1_2017_bout_1 mixedForest        44.05997         -71.2779
-## 6  BART_018_point_1_2017_bout_1 mixedForest        44.05997         -71.2779
-## 7  BART_018_point_2_2017_bout_1 mixedForest        44.05997         -71.2779
-## 8  BART_018_point_2_2017_bout_1 mixedForest        44.05997         -71.2779
-## 9  BART_018_point_2_2017_bout_1 mixedForest        44.05997         -71.2779
-## 10 BART_018_point_2_2017_bout_1 mixedForest        44.05997         -71.2779
-##    geodeticDatum coordinateUncertainty elevation elevationUncertainty
-## 1          WGS84                 250.1     297.2                  0.2
-## 2          WGS84                 250.1     297.2                  0.2
-## 3          WGS84                 250.1     297.2                  0.2
-## 4          WGS84                 250.1     297.2                  0.2
-## 5          WGS84                 250.1     297.2                  0.2
-## 6          WGS84                 250.1     297.2                  0.2
-## 7          WGS84                 250.1     297.2                  0.2
-## 8          WGS84                 250.1     297.2                  0.2
-## 9          WGS84                 250.1     297.2                  0.2
-## 10         WGS84                 250.1     297.2                  0.2
-##    samplingImpracticalRemarks samplingImpractical startCloudCoverPercentage
-## 1                        &lt;NA&gt;                  OK                       100
-## 2                        &lt;NA&gt;                  OK                       100
-## 3                        &lt;NA&gt;                  OK                       100
-## 4                        &lt;NA&gt;                  OK                       100
-## 5                        &lt;NA&gt;                  OK                       100
-## 6                        &lt;NA&gt;                  OK                       100
-## 7                        &lt;NA&gt;                  OK                       100
-## 8                        &lt;NA&gt;                  OK                       100
-## 9                        &lt;NA&gt;                  OK                       100
-## 10                       &lt;NA&gt;                  OK                       100
-##    endCloudCoverPercentage startRH endRH                  observedHabitat
-## 1                      100      73    78                 deciduous forest
-## 2                      100      73    78                 deciduous forest
-## 3                      100      73    78                 deciduous forest
-## 4                      100      73    78                 deciduous forest
-## 5                      100      73    78                 deciduous forest
-## 6                      100      73    78                 deciduous forest
-## 7                      100      73    78 mixed deciduous/evergreen forest
-## 8                      100      73    78 mixed deciduous/evergreen forest
-## 9                      100      73    78 mixed deciduous/evergreen forest
-## 10                     100      73    78 mixed deciduous/evergreen forest
-##    observedAirTemp kmPerHourObservedWindSpeed                  laboratoryName
-## 1               15                          1 Bird Conservancy of the Rockies
-## 2               15                          1 Bird Conservancy of the Rockies
-## 3               15                          1 Bird Conservancy of the Rockies
-## 4               15                          1 Bird Conservancy of the Rockies
-## 5               15                          1 Bird Conservancy of the Rockies
-## 6               15                          1 Bird Conservancy of the Rockies
-## 7               16                          3 Bird Conservancy of the Rockies
-## 8               16                          3 Bird Conservancy of the Rockies
-## 9               16                          3 Bird Conservancy of the Rockies
-## 10              16                          3 Bird Conservancy of the Rockies
-##    samplingProtocolVersion remarks measuredBy
-## 1        NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
-## 2        NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
-## 3        NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
-## 4        NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
-## 5        NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
-## 6        NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
-## 7        NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
-## 8        NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
-## 9        NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
-## 10       NEON.DOC.014041vH    &lt;NA&gt;      JRUEB</code></pre>
+head(brd_joineddata_clean, n=5)</code></pre>
+<pre><code>##                                    uid         namedLocation domainID siteID
+## 1 28587fd5-e9c6-4dd9-ac2f-2a80d9d69ec2 BART_018.birdGrid.brd      D01   BART
+## 2 09f4496e-72c5-42ff-a4bf-aadcbf739397 BART_018.birdGrid.brd      D01   BART
+## 3 8721c42a-1e64-4c60-a40f-26b41ec3f51a BART_018.birdGrid.brd      D01   BART
+## 4 8ea10abd-5835-4fda-b592-ba3533c3311a BART_018.birdGrid.brd      D01   BART
+## 5 39915ebd-b013-4681-9903-9debb0ab7166 BART_018.birdGrid.brd      D01   BART
+##     plotID    plotType pointID           startDate boutNumber         eventID
+## 1 BART_018 distributed       1 2017-06-21 09:03:00          1 BRD.BART.2017.1
+## 2 BART_018 distributed       1 2017-06-21 09:03:00          1 BRD.BART.2017.1
+## 3 BART_018 distributed       1 2017-06-21 09:03:00          1 BRD.BART.2017.1
+## 4 BART_018 distributed       1 2017-06-21 09:03:00          1 BRD.BART.2017.1
+## 5 BART_018 distributed       1 2017-06-21 09:03:00          1 BRD.BART.2017.1
+##   pointCountMinute targetTaxaPresent taxonID       scientificName taxonRank
+## 1                1                 Y    BTNW     Setophaga virens   species
+## 2                2                 Y    RBWO Melanerpes carolinus   species
+## 3                1                 Y    REVI      Vireo olivaceus   species
+## 4                1                 Y    OVEN  Seiurus aurocapilla   species
+## 5                1                 Y    HETH    Catharus guttatus   species
+##                 vernacularName observerDistance detectionMethod
+## 1 Black-throated Green Warbler               40         singing
+## 2       Red-bellied Woodpecker               20         calling
+## 3               Red-eyed Vireo               45         singing
+## 4                     Ovenbird               40         singing
+## 5                Hermit Thrush               50         singing
+##   visualConfirmation sexOrAge clusterSize clusterCode identifiedBy
+## 1                 No     Male           1        &lt;NA&gt;        JRUEB
+## 2                 No  Unknown           1        &lt;NA&gt;        JRUEB
+## 3                 No     Male           1        &lt;NA&gt;        JRUEB
+## 4                 No     Male           1        &lt;NA&gt;        JRUEB
+## 5                 No     Male           1        &lt;NA&gt;        JRUEB
+##   identificationHistoryID  publicationDate      release year
+## 1                    &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
+## 2                    &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
+## 3                    &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
+## 4                    &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
+## 5                    &lt;NA&gt; 20260106T223356Z RELEASE-2026 2017
+##                  pointSurveyID   nlcdClass decimalLatitude decimalLongitude
+## 1 BART_018_point_1_2017_bout_1 mixedForest        44.05997         -71.2779
+## 2 BART_018_point_1_2017_bout_1 mixedForest        44.05997         -71.2779
+## 3 BART_018_point_1_2017_bout_1 mixedForest        44.05997         -71.2779
+## 4 BART_018_point_1_2017_bout_1 mixedForest        44.05997         -71.2779
+## 5 BART_018_point_1_2017_bout_1 mixedForest        44.05997         -71.2779
+##   geodeticDatum coordinateUncertainty elevation elevationUncertainty
+## 1         WGS84                 250.1     297.2                  0.2
+## 2         WGS84                 250.1     297.2                  0.2
+## 3         WGS84                 250.1     297.2                  0.2
+## 4         WGS84                 250.1     297.2                  0.2
+## 5         WGS84                 250.1     297.2                  0.2
+##   samplingImpracticalRemarks samplingImpractical startCloudCoverPercentage
+## 1                       &lt;NA&gt;                  OK                       100
+## 2                       &lt;NA&gt;                  OK                       100
+## 3                       &lt;NA&gt;                  OK                       100
+## 4                       &lt;NA&gt;                  OK                       100
+## 5                       &lt;NA&gt;                  OK                       100
+##   endCloudCoverPercentage startRH endRH  observedHabitat observedAirTemp
+## 1                     100      73    78 deciduous forest              15
+## 2                     100      73    78 deciduous forest              15
+## 3                     100      73    78 deciduous forest              15
+## 4                     100      73    78 deciduous forest              15
+## 5                     100      73    78 deciduous forest              15
+##   kmPerHourObservedWindSpeed                  laboratoryName
+## 1                          1 Bird Conservancy of the Rockies
+## 2                          1 Bird Conservancy of the Rockies
+## 3                          1 Bird Conservancy of the Rockies
+## 4                          1 Bird Conservancy of the Rockies
+## 5                          1 Bird Conservancy of the Rockies
+##   samplingProtocolVersion remarks measuredBy
+## 1       NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
+## 2       NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
+## 3       NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
+## 4       NEON.DOC.014041vH    &lt;NA&gt;      JRUEB
+## 5       NEON.DOC.014041vH    &lt;NA&gt;      JRUEB</code></pre>
 </div>
 </div>
 <div id="building-the-detection-history" class="section level2">
@@ -1251,9 +1092,73 @@ ests</code></pre>
 ## 1       psi 0.4681362 0.07279173 0.3316722 0.6095392
 ## 2         p 0.8604286 0.02643372 0.8001831 0.9046737</code></pre>
 <p>From these results, we see that <em>Melanerpes carolinus</em> has an
-estimated occupancy probability (ψ) of about 0.47. This means that, on
-average, there is roughly a 47% chance that a NEON site is occupied by
-this species.</p>
+estimated occupancy probability (ψ) of about 0.47. This means that if
+you randomly select a NEON site, there is roughly a 47% chance that the
+species can be found at that site—equivalently, the species is present
+at about 47% of NEON sites in this dataset. We can see that if we
+overlay a range map for <em>Melanerpes carolinus</em>, it covers roughly
+half of NEON sites.</p>
+<blockquote>
+<p>U.S. Geological Survey (USGS) - Gap Analysis Project (GAP), 2018,
+Red-bellied Woodpecker (Melanerpes carolinus) bRBWOx_CONUS_2001v1 Range
+Map: U.S. Geological Survey data release, <a href="https://doi.org/10.5066/F7JW8CX7" class="uri">https://doi.org/10.5066/F7JW8CX7</a>.</p>
+</blockquote>
+<pre class="r"><code>library(sf)
+library(rnaturalearth)
+
+melanerpes_carolinus_range &lt;- st_read(&quot;data/bRBWOx_CONUS_Range_2001v1/bRBWOx_CONUS_Range_2001v1.shp&quot;, quiet = TRUE) %&gt;%
+  st_transform(crs = 4326)
+
+site_map &lt;- brd_perpoint_clean %&gt;%
+  select(siteID, decimalLatitude, decimalLongitude) %&gt;%
+  distinct(siteID, .keep_all = TRUE) %&gt;%
+  left_join(
+    brd_single_species %&gt;%
+      distinct(siteID) %&gt;%
+      mutate(present = 1),
+    by = &quot;siteID&quot;
+  ) %&gt;%
+  mutate(present = ifelse(is.na(present), 0, present))
+
+usa &lt;- bind_rows(
+  ne_states(country = &quot;United States of America&quot;, returnclass = &quot;sf&quot;),
+  ne_states(country = &quot;Puerto Rico&quot;, returnclass = &quot;sf&quot;)
+) %&gt;%
+  st_transform(4326)
+
+ggplot() +
+  geom_sf(data = usa, fill = NA, color = &quot;black&quot;) +
+  geom_sf(data = melanerpes_carolinus_range,
+          fill = &quot;lightgreen&quot;,
+          color = NA,
+          alpha = 0.4) +
+  geom_point(data = site_map,
+             aes(x = decimalLongitude,
+                 y = decimalLatitude,
+                 color = factor(present)),
+             size = 2) +
+  scale_color_manual(
+    values = c(&quot;0&quot; = &quot;gray70&quot;, &quot;1&quot; = &quot;darkgreen&quot;),
+    labels = c(&quot;Not detected&quot;, &quot;Detected&quot;),
+    name = &quot;Species observed&quot;
+  ) +
+  coord_sf(
+  xlim = c(-170, -60),
+  ylim = c(15, 72),
+  expand = FALSE
+) +
+  labs(
+    x = &quot;Longitude&quot;,
+    y = &quot;Latitude&quot;,
+    title = &quot;Red-bellied Woodpecker Range and NEON Site Detections&quot;
+  ) +
+  theme_bw()</code></pre>
+<p><img src="data:image/png;base64,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" width="672" /></p>
+<p>At this broad scale, this estimate is mostly descriptive and could be
+approximated directly from the data. Occupancy estimates become more
+informative when applied at finer spatial scales or when combined with
+covariates, which help explain why the species occurs in some locations
+but not others.</p>
 <p>The estimated detection probability (p) is about 0.86, meaning that
 if the species is present at a site, there is about a 86% chance it will
 be detected.</p>
@@ -1370,8 +1275,8 @@ probabilities differ dramatically (.90 and .22). Blue Jays are highly
 detectable during point-count surveys, whereas Great Horned Owls are
 much more difficult to detect under the same protocol.</p>
 </div>
-<div id="introducting-covariates" class="section level2">
-<h2>Introducting Covariates</h2>
+<div id="introducing-covariates" class="section level2">
+<h2>Introducing Covariates</h2>
 <p>In reality, occupancy and detection probabilities are rarely constant
 across all sites and surveys. Many factors can influence whether a
 species occurs at a site and whether it is detected during a survey.
@@ -1447,7 +1352,8 @@ head(site_cov, n=10)</code></pre>
 ## DELA      23.7</code></pre>
 <p>Note that other types of site covariates could also be used. For
 example, categorical variables such as land cover class could be
-included instead:</p>
+included instead. When including categorical variables as covariates,
+they must be converted to factors.</p>
 <pre class="r"><code># Example categorical covariate
  site_cov_categorical &lt;- brd_perpoint_clean %&gt;%
    select(siteID, nlcdClass) %&gt;%
@@ -1455,6 +1361,8 @@ included instead:</p>
    mutate(nlcdClass = as.factor(nlcdClass)) %&gt;%
    arrange(siteID) %&gt;%
    tibble::column_to_rownames(&quot;siteID&quot;)
+
+site_cov_categorical$nlcdClass &lt;- factor(site_cov_categorical$nlcdClass)
 
 head(site_cov_categorical, n=10)</code></pre>
 <pre><code>##                       nlcdClass

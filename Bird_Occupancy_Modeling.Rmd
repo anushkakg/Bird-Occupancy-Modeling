@@ -419,7 +419,7 @@ ests <- ests[1:2,] %>%
 ests
 ```
 
-From these results, we see that *Melanerpes carolinus* has an estimated occupancy probability (ψ) of about 0.47. This means that if you randomly select a NEON site, there is roughly a 47% chance that the species can be found at that site—equivalently, the species is present at about 47% of NEON sites in this dataset. We can see that if we overlay a range map for *Melanerpes carolinus*, it covers roughly half of NEON sites.
+From these results, we see that *Melanerpes carolinus* has an estimated **occupancy probability (ψ) of about 0.47**. This means that if you randomly select a NEON site, there is roughly a 47% chance that the species can be found at that site—equivalently, the species is present at about 47% of NEON sites in this dataset. We can see that if we overlay a range map for *Melanerpes carolinus*, it covers roughly half of NEON sites.
 
 > U.S. Geological Survey (USGS) - Gap Analysis Project (GAP), 2018, Red-bellied Woodpecker (Melanerpes carolinus) bRBWOx_CONUS_2001v1 Range Map: U.S. Geological Survey data release, https://doi.org/10.5066/F7JW8CX7.
 
@@ -475,9 +475,10 @@ ggplot() +
   ) +
   theme_bw()
 ```
+
 At this broad scale, this estimate is mostly descriptive and could be approximated directly from the data. Occupancy estimates become more informative when applied at finer spatial scales or when combined with covariates, which help explain why the species occurs in some locations but not others.
 
-The estimated detection probability (p) is about 0.86, meaning that if the species is present at a site, there is about a 86% chance it will be detected.
+The **estimated detection probability (p) is about 0.86**, meaning that if the species is present at a site, there is about a 86% chance it will be detected.
 
 ## Comparing Species
 

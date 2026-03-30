@@ -476,7 +476,7 @@ ggplot() +
   theme_bw()
 ```
 
-At this broad scale, this estimate is mostly descriptive and could be approximated directly from the data. Occupancy estimates become more informative when applied at finer spatial scales or when combined with covariates, which help explain why the species occurs in some locations but not others.
+At this broad scale, this estimate is mostly descriptive and could be approximated directly from the data. Occupancy estimates become more informative when applied at finer spatial scales or when combined with covariates, which help explain why species occurs in some locations but not others.
 
 The **estimated detection probability (p) is about 0.86**, meaning that if the species is present at a site, there is about a 86% chance it will be detected.
 
@@ -913,6 +913,8 @@ ggplot(data, aes(x = survey_effort, y = est)) +
   scale_y_continuous(limits = c(0, 1)) +
   theme_bw()
 ```
+
+Biologically, the fact that `survey_effort` does not have any real effect on detection likely has to do with *Melanerpes carolinus*'s high detection rate (80%-90%). Since the species is already highly detectable, observers are likely to detect it quickly when it is present, so increasing survey effort does not meaningfully increase detection probability.
 
 ## Conclusion
 

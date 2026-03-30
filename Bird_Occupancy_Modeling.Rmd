@@ -169,7 +169,7 @@ Take a look at their structure (that is, what fields are included) and the data 
 ```{r brd_perpoint}
 str(bird.counts$brd_perpoint)
 
-head(bird.counts$brd_perpoint, n=10)
+head(bird.counts$brd_perpoint, n=5)
 ```
 
 `brd_countdata` contains data for the birds observed during each point-count survey, including identification, observation method, distance, and observed minute.
@@ -177,7 +177,7 @@ head(bird.counts$brd_perpoint, n=10)
 ```{r brd_countdata}
 str(bird.counts$brd_countdata)
 
-head(bird.counts$brd_countdata, n=10)
+head(bird.counts$brd_countdata, n=5)
 ```
 
 Before we can build detection histories and fit an occupancy model, we need to clean the data a bit. This includes:
@@ -265,7 +265,7 @@ brd_joineddata_clean <- brd_joineddata_clean %>%
   select(-matches("\\.perpoint$"))
 names(brd_joineddata_clean) <- gsub("\\.count$", "", names(brd_joineddata_clean))
 
-head(brd_joineddata_clean, n=10)
+head(brd_joineddata_clean, n=5)
 ```
 
 ## Building the Detection History
@@ -558,7 +558,7 @@ ggplot(species_estimates,
 
 Here we can see that although Blue Jays and Great Horned Owls have similar occupancy probabilities (.51 and .56), their detection probabilities differ dramatically (.90 and .22). Blue Jays are highly detectable during point-count surveys, whereas Great Horned Owls are much more difficult to detect under the same protocol.
 
-## Introducting Covariates
+## Introducing Covariates
 
 In reality, occupancy and detection probabilities are rarely constant across all sites and surveys. Many factors can influence whether a species occurs at a site and whether it is detected during a survey. These factors can be included in occupancy models as covariates.
 
@@ -603,7 +603,7 @@ site_cov <- brd_joineddata_clean %>%
 head(site_cov, n=10)
 ```
 
-Note that other types of site covariates could also be used. For example, categorical variables such as land cover class could be included instead:
+Note that other types of site covariates could also be used. For example, categorical variables such as land cover class could be included instead. When including categorical variables as covariates, they must be converted to factors.
 
 ```{r}
 # Example categorical covariate
@@ -613,6 +613,8 @@ Note that other types of site covariates could also be used. For example, catego
    mutate(nlcdClass = as.factor(nlcdClass)) %>%
    arrange(siteID) %>%
    tibble::column_to_rownames("siteID")
+
+site_cov_categorical$nlcdClass <- factor(site_cov_categorical$nlcdClass)
 
 head(site_cov_categorical, n=10)
 ```

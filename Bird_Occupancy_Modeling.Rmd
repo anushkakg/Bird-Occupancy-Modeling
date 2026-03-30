@@ -230,23 +230,6 @@ brd_countdata_clean <- brd_countdata_clean %>%
   filter(taxonRank == "species")
 ```
 
-### Remove duplicate surveys
-
-Each `pointSurveyID` should correspond to a single point-count survey. Occasionally, duplicate IDs appear, likely due to data entry or processing issues. We identify any duplicated `pointSurveyID` values and remove those surveys from both tables.
-
-```{r}
-duplicate_pointSurveyID <- brd_perpoint_clean %>%
-  count(pointSurveyID) %>%
-  filter(n > 1) %>%
-  pull(pointSurveyID)
-
-brd_perpoint_clean <- brd_perpoint_clean %>%
-  filter(!pointSurveyID %in% duplicate_pointSurveyID)
-
-brd_countdata_clean <- brd_countdata_clean %>%
-  filter(!pointSurveyID %in% duplicate_pointSurveyID)
-```
-
 ### Join per-point and count tables
 
 Finally, we join the cleaned detection data (`brd_countdata_clean`) with the cleaned per-point metadata (`brd_perpoint_clean`) using the `pointSurveyID` identifer we created earlier as the primary key. After the join, we drop duplicate columns and keep a single, combined dataset.
@@ -436,7 +419,63 @@ ests <- ests[1:2,] %>%
 ests
 ```
 
-From these results, we see that *Melanerpes carolinus* has an estimated occupancy probability (ψ) of about 0.47. This means that, on average, there is roughly a 47% chance that a NEON site is occupied by this species.
+From these results, we see that *Melanerpes carolinus* has an estimated occupancy probability (ψ) of about 0.47. This means that if you randomly select a NEON site, there is roughly a 47% chance that the species can be found at that site—equivalently, the species is present at about 47% of NEON sites in this dataset. We can see that if we overlay a range map for *Melanerpes carolinus*, it covers roughly half of NEON sites.
+
+> U.S. Geological Survey (USGS) - Gap Analysis Project (GAP), 2018, Red-bellied Woodpecker (Melanerpes carolinus) bRBWOx_CONUS_2001v1 Range Map: U.S. Geological Survey data release, https://doi.org/10.5066/F7JW8CX7.
+
+```{r message=FALSE, warning=FALSE}
+library(sf)
+library(rnaturalearth)
+
+melanerpes_carolinus_range <- st_read("data/bRBWOx_CONUS_Range_2001v1/bRBWOx_CONUS_Range_2001v1.shp", quiet = TRUE) %>%
+  st_transform(crs = 4326)
+
+site_map <- brd_perpoint_clean %>%
+  select(siteID, decimalLatitude, decimalLongitude) %>%
+  distinct(siteID, .keep_all = TRUE) %>%
+  left_join(
+    brd_single_species %>%
+      distinct(siteID) %>%
+      mutate(present = 1),
+    by = "siteID"
+  ) %>%
+  mutate(present = ifelse(is.na(present), 0, present))
+
+usa <- bind_rows(
+  ne_states(country = "United States of America", returnclass = "sf"),
+  ne_states(country = "Puerto Rico", returnclass = "sf")
+) %>%
+  st_transform(4326)
+
+ggplot() +
+  geom_sf(data = usa, fill = NA, color = "black") +
+  geom_sf(data = melanerpes_carolinus_range,
+          fill = "lightgreen",
+          color = NA,
+          alpha = 0.4) +
+  geom_point(data = site_map,
+             aes(x = decimalLongitude,
+                 y = decimalLatitude,
+                 color = factor(present)),
+             size = 2) +
+  scale_color_manual(
+    values = c("0" = "gray70", "1" = "darkgreen"),
+    labels = c("Not detected", "Detected"),
+    name = "Species observed"
+  ) +
+  coord_sf(
+  xlim = c(-170, -60),
+  ylim = c(15, 72),
+  expand = FALSE
+) +
+  labs(
+    x = "Longitude",
+    y = "Latitude",
+    title = "Red-bellied Woodpecker Range and NEON Site Detections"
+  ) +
+  theme_bw()
+```
+At this broad scale, this estimate is mostly descriptive and could be approximated directly from the data. Occupancy estimates become more informative when applied at finer spatial scales or when combined with covariates, which help explain why the species occurs in some locations but not others.
 
 The estimated detection probability (p) is about 0.86, meaning that if the species is present at a site, there is about a 86% chance it will be detected.
 

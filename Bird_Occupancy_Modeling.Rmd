@@ -186,7 +186,6 @@ Before we can build detection histories and fit an occupancy model, we need to c
 * Filtering out incomplete point-count surveys.
 * Remove surveys conducted before 2017.
 * Keeping only detections identified to the species level.
-* Removing duplicate point-count surveys.
 * Joining the two tables into a single dataset.
 
 ### Create a unique point-count survey ID

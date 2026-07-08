@@ -52,8 +52,8 @@ For example: (Large Site) D07 → GRSM → GRSM_002 → 5 | (Small Site) D20 →
 </div> 
 
 <figure>
-	<a href="https://raw.githubusercontent.com/NEONScience/NEON-Data-Skills/main/tutorials/R/biodiversity/bird-occupancy-modelling/rfigs/birdGrid.jpg">
-	<img src="https://raw.githubusercontent.com/NEONScience/NEON-Data-Skills/main/tutorials/R/biodiversity/bird-occupancy-modelling/rfigs/birdGrid.jpg" alt="Design of the bird point count grid, consisting of 9 points separated by a minimum of 250 m."></a>
+	<a href="https://raw.githubusercontent.com/anushkakg/Bird-Occupancy-Modeling/refs/heads/main/images/birdGrid.jpg">
+	<img src="https://raw.githubusercontent.com/anushkakg/Bird-Occupancy-Modeling/refs/heads/main/images/birdGrid.jpg" alt="Design of the bird point count grid, consisting of 9 points separated by a minimum of 250 m."></a>
 	<figcaption>Figure 1: Design of a bird grid, consisting of 9 points separated by a minimum of 250 m. Source: National Ecological Observatory Network, CC-BY (NEON)  
 	</figcaption>
 </figure>
